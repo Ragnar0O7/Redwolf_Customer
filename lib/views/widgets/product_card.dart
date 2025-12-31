@@ -80,19 +80,16 @@ class _ProductCardState extends State<ProductCard> {
               ),
             ),
 
-            /// CONTENT - Ultra compact to eliminate overflow
+            /// CONTENT - Exact padding matching design specifications
             Expanded(
               flex: 1, // Fixed flex to make content section smaller
               child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 4 : 8, // Further reduced left/right padding
-                  vertical: isMobile ? 4 : 6, // Further reduced vertical padding
-                ),
+                padding: const EdgeInsets.all(12), // 12 PX padding on all sides
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Category tag - ultra minimal
+                    // Category tag - matching design specs
                     if (widget.product.category.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -106,49 +103,53 @@ class _ProductCardState extends State<ProductCard> {
                         child: Text(
                           widget.product.category,
                           style: TextStyle(
-                            fontSize: isMobile ? 8 : 10,
+                            fontSize: 10, // 10px font size
                             color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w400, // 400 weight
+                            height: 1.4, // 14px line height (14/10 = 1.4)
                           ),
                         ),
                       ),
 
+                    // 12 PX spacing between tag and title
                     if (widget.product.category.isNotEmpty)
-                      SizedBox(height: isMobile ? 2 : 4),
+                      const SizedBox(height: 12),
 
-                    // Product name - ultra minimal font size
+                    // Product name - matching design specs
                     Flexible(
                       child: Text(
                         widget.product.name,
                         maxLines: 2, // Allow 2 lines for longer names
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: isMobile ? 10 : 14, // Ultra minimal font size
-                          fontWeight: FontWeight.w600,
-                          height: 1.05, // Ultra tight line height
+                        style: const TextStyle(
+                          fontSize: 14, // 14px font size
+                          fontWeight: FontWeight.w500, // 500 weight
+                          height: 1.428, // 20px line height (20/14 = 1.428)
                           color: Colors.black,
                         ),
                       ),
                     ),
 
-                    SizedBox(height: isMobile ? 3 : 5), // Ultra minimal spacing
+                    // 16 PX spacing between title and view details
+                    const SizedBox(height: 16),
 
-                    // View details CTA - minimal
+                    // View details CTA - matching design specs
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'view details',
-                          style: TextStyle(
-                            color: const Color(0xFFDC2626),
-                            fontWeight: FontWeight.w600,
-                            fontSize: isMobile ? 9 : 11, // Ultra minimal font size
+                          style: const TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.w600, // 600 weight
+                            fontSize: 12, // 12px font size
+                            height: 1.5, // 18px line height (18/12 = 1.5)
                           ),
                         ),
                         const SizedBox(width: 2),
                         Icon(
                           Icons.arrow_forward,
-                          size: isMobile ? 11 : 13, // Ultra minimal icon size
+                          size: 12, // Match font size
                           color: const Color(0xFFDC2626),
                         ),
                       ],

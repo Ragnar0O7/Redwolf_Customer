@@ -35,9 +35,25 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   @override
   void initState() {
     super.initState();
+    // Initialize PageController for image gallery
+    _initializeImageController();
     _loadProductDetails();
     _trackProductView();
     _loadSimilarProducts();
+  }
+
+  void _initializeImageController() {
+    // Initialize with initial page 0
+    // The controller will be updated if image count changes
+    final imageCount = _productImages.length;
+    _imagePageController?.dispose();
+    _imagePageController = PageController(initialPage: 0);
+  }
+
+  @override
+  void dispose() {
+    _imagePageController?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProductDetails() async {
@@ -50,7 +66,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         widget.product.id!,
       );
       if (product != null) {
-        setState(() => _enhancedProduct = product);
+        setState(() {
+          _enhancedProduct = product;
+          // Re-initialize image controller in case image count changed
+          _initializeImageController();
+        });
       }
     } catch (e) {
       print('Error loading product details: $e');
@@ -755,6 +775,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
     // Main hero product image slider (swipeable, no arrows, no white background)
     Widget buildMainImage(double maxWidth) {
+      // Ensure controller is initialized
+      if (_imagePageController == null) {
+        _initializeImageController();
+      }
+      
       // Increased size for better visibility
       final imageWidth = maxWidth * 0.95; // Increased to 95% of max width
       final imageHeight = imageWidth * 0.95; // Slightly taller than square
@@ -865,13 +890,17 @@ class _ProductDetailViewState extends State<ProductDetailView> {
             final isSelected = _selectedImageIndex == index;
             return GestureDetector(
               onTap: () {
+                // Ensure controller is initialized
+                if (_imagePageController == null) {
+                  _initializeImageController();
+                }
                 setState(() {
                   _selectedImageIndex = index;
                 });
                 _imagePageController?.animateToPage(
                   index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOutCubic,
                 );
               },
               child: Container(
@@ -988,13 +1017,17 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                 height: 72,
                 margin: const EdgeInsets.only(bottom: 12),
                 onTap: () {
+                  // Ensure controller is initialized
+                  if (_imagePageController == null) {
+                    _initializeImageController();
+                  }
                   setState(() {
                     _selectedImageIndex = index;
                   });
                   _imagePageController?.animateToPage(
                     index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOutCubic,
                   );
                 },
               );
