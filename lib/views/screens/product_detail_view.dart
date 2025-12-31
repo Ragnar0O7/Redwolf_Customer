@@ -779,7 +779,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       if (_imagePageController == null) {
         _initializeImageController();
       }
-      
+
       // Increased size for better visibility
       final imageWidth = maxWidth * 0.95; // Increased to 95% of max width
       final imageHeight = imageWidth * 0.95; // Slightly taller than square
@@ -2232,7 +2232,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                           .toList(),
                     ),
                   ),
-                  const SizedBox(width: 7),
+                  const SizedBox(
+                    width: 48,
+                  ), // Spacing between columns to match Figma design (40-50px range)
                   // Right column
                   Expanded(
                     child: Column(
@@ -2281,7 +2283,10 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       ),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: const Color(0xFFC6C7D0), width: 1),
+          bottom: BorderSide(
+            color: const Color(0xFFC6C7D0),
+            width: 0.5, // Thin border lines to match Figma design
+          ),
         ),
       ),
       child: Row(
@@ -2289,7 +2294,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
         textBaseline: TextBaseline.alphabetic,
         children: [
           SizedBox(
-            width: isWeb ? 200 : (isMobile ? 120 : 150),
+            width: isWeb
+                ? 200
+                : (isMobile
+                      ? 120
+                      : 150), // Fixed width for labels to ensure proper alignment
             child: Text(
               label,
               style: const TextStyle(
@@ -2300,7 +2309,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(
+            width: isWeb
+                ? 24
+                : 16, // Spacing between label and value to match Figma design (20-25px range)
+          ),
           Expanded(
             child: Text(
               value,

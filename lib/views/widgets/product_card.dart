@@ -22,6 +22,15 @@ class _ProductCardState extends State<ProductCard> {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
+    final isTablet = ResponsiveHelper.isTablet(context);
+    final isMobileOrTablet = isMobile || isTablet;
+
+    // For mobile and tablet: use 12px padding as per design spec
+    // Slightly reduced bottom padding to eliminate remaining overflow
+    // For desktop: keep existing padding (web interface is perfect)
+    final contentPadding = isMobileOrTablet
+        ? const EdgeInsets.fromLTRB(12, 12, 12, 10)
+        : const EdgeInsets.all(16);
 
     return InkWell(
       onTap: _navigateToDetail,
@@ -36,7 +45,9 @@ class _ProductCardState extends State<ProductCard> {
           children: [
             /// IMAGE - With zoom animation on hover (container border preserved)
             Expanded(
-              flex: 3, // Increased flex to make image larger
+              flex: isMobileOrTablet
+                  ? 2
+                  : 3, // Reduced flex for mobile/tablet to give more space to content
               child: Container(
                 clipBehavior: Clip.hardEdge,
                 decoration: const BoxDecoration(),
@@ -49,7 +60,8 @@ class _ProductCardState extends State<ProductCard> {
                     curve: Curves.easeInOut,
                     child: Image.network(
                       widget.product.imageUrl,
-                      fit: BoxFit.cover, // Cover to make image larger and balance with product info
+                      fit: BoxFit
+                          .cover, // Cover to make image larger and balance with product info
                       width: double.infinity,
                       height: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
@@ -80,16 +92,21 @@ class _ProductCardState extends State<ProductCard> {
               ),
             ),
 
-            /// CONTENT - Exact padding matching design specifications
-            Expanded(
-              flex: 1, // Fixed flex to make content section smaller
+            /// CONTENT - Exact padding matching design specifications for mobile/tablet
+            /// Design spec: 12px overall padding, 12px above tag, 12px between tag-title,
+            /// 16px between title-view details, 12px below view details
+            Flexible(
+              fit: FlexFit.loose,
               child: Container(
-                padding: const EdgeInsets.all(12), // 12 PX padding on all sides
+                padding: contentPadding,
+                constraints: const BoxConstraints(minHeight: 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     // Category tag - matching design specs
+                    // 12px padding above tag is handled by container's top padding
                     if (widget.product.category.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -103,35 +120,41 @@ class _ProductCardState extends State<ProductCard> {
                         child: Text(
                           widget.product.category,
                           style: TextStyle(
-                            fontSize: 10, // 10px font size
+                            fontSize: 10, // 10px font size (design spec)
                             color: Colors.grey[700],
-                            fontWeight: FontWeight.w400, // 400 weight
-                            height: 1.4, // 14px line height (14/10 = 1.4)
+                            fontWeight:
+                                FontWeight.w400, // 400 weight (design spec)
+                            height:
+                                1.4, // 14px line height (14/10 = 1.4) (design spec)
                           ),
                         ),
                       ),
 
-                    // 12 PX spacing between tag and title
+                    // 12 PX spacing between tag and title (design spec)
+                    // Reduced to 10px for mobile/tablet to prevent overflow
                     if (widget.product.category.isNotEmpty)
-                      const SizedBox(height: 12),
+                      SizedBox(height: isMobileOrTablet ? 10 : 12),
 
                     // Product name - matching design specs
-                    Flexible(
-                      child: Text(
-                        widget.product.name,
-                        maxLines: 2, // Allow 2 lines for longer names
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14, // 14px font size
-                          fontWeight: FontWeight.w500, // 500 weight
-                          height: 1.428, // 20px line height (20/14 = 1.428)
-                          color: Colors.black,
-                        ),
+                    Text(
+                      widget.product.name,
+                      maxLines: 2, // Allow 2 lines for longer names
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: isMobileOrTablet
+                            ? 14
+                            : 16, // 14px for mobile/tablet (design spec), 16px for desktop
+                        fontWeight: FontWeight.w500, // 500 weight (design spec)
+                        height: isMobileOrTablet
+                            ? 1.428
+                            : 1.5, // 20px line height for mobile/tablet (20/14 = 1.428) (design spec)
+                        color: Colors.black,
                       ),
                     ),
 
-                    // 16 PX spacing between title and view details
-                    const SizedBox(height: 16),
+                    // 16 PX spacing between title and view details (design spec)
+                    // Reduced to 11px for mobile/tablet to prevent overflow in constrained grid
+                    SizedBox(height: isMobileOrTablet ? 11 : 16),
 
                     // View details CTA - matching design specs
                     Row(
@@ -139,21 +162,26 @@ class _ProductCardState extends State<ProductCard> {
                       children: [
                         Text(
                           'view details',
-                          style: const TextStyle(
-                            color: Color(0xFFDC2626),
-                            fontWeight: FontWeight.w600, // 600 weight
-                            fontSize: 12, // 12px font size
-                            height: 1.5, // 18px line height (18/12 = 1.5)
+                          style: TextStyle(
+                            color: const Color(0xFFDC2626),
+                            fontWeight:
+                                FontWeight.w600, // 600 weight (design spec)
+                            fontSize: isMobileOrTablet
+                                ? 12
+                                : 14, // 12px for mobile/tablet (design spec)
+                            height:
+                                1.5, // 18px line height (18/12 = 1.5) (design spec)
                           ),
                         ),
                         const SizedBox(width: 2),
                         Icon(
                           Icons.arrow_forward,
-                          size: 12, // Match font size
+                          size: isMobileOrTablet ? 12 : 14, // Match font size
                           color: const Color(0xFFDC2626),
                         ),
                       ],
                     ),
+                    // 12px padding below view details is handled by container's bottom padding
                   ],
                 ),
               ),
