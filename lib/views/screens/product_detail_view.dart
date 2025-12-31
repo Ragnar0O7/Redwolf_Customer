@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/product.dart';
@@ -688,15 +689,28 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
                                         ),
-                                        children: const [
+                                        children: [
                                           TextSpan(
                                             text: 'Ruditech',
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               color: Color(0xFF5D8BFF),
                                               fontWeight: FontWeight.w400,
                                               decoration:
                                                   TextDecoration.underline,
                                             ),
+                                            recognizer: TapGestureRecognizer()
+                                              ..onTap = () async {
+                                                final uri = Uri.parse(
+                                                  'https://ruditech.com/',
+                                                );
+                                                if (await canLaunchUrl(uri)) {
+                                                  await launchUrl(
+                                                    uri,
+                                                    mode: LaunchMode
+                                                        .externalApplication,
+                                                  );
+                                                }
+                                              },
                                           ),
                                         ],
                                       ),
@@ -947,15 +961,28 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                             fontSize: 14,
                                             fontWeight: FontWeight.w400,
                                           ),
-                                          children: const [
+                                          children: [
                                             TextSpan(
                                               text: 'Ruditech',
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 color: Color(0xFF5D8BFF),
                                                 fontWeight: FontWeight.w400,
                                                 decoration:
                                                     TextDecoration.underline,
                                               ),
+                                              recognizer: TapGestureRecognizer()
+                                                ..onTap = () async {
+                                                  final uri = Uri.parse(
+                                                    'https://ruditech.com/',
+                                                  );
+                                                  if (await canLaunchUrl(uri)) {
+                                                    await launchUrl(
+                                                      uri,
+                                                      mode: LaunchMode
+                                                          .externalApplication,
+                                                    );
+                                                  }
+                                                },
                                             ),
                                           ],
                                         ),
