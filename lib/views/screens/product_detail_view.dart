@@ -487,6 +487,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveHelper.isMobile(context);
+    final isTablet = ResponsiveHelper.isTablet(context);
     final isDesktop = ResponsiveHelper.isDesktop(context);
     final maxWidth = _getMaxWidth(context);
     final horizontalPadding = _getHorizontalPadding(context);
@@ -505,248 +507,469 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               child: CircularProgressIndicator(color: Color(0xFFDC2626)),
             )
           : SafeArea(
-              child: SingleChildScrollView(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: maxWidth,
-                      minHeight: MediaQuery.of(context).size.height - 100,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header + main hero section (no tinted background)
-                        Container(
-                          color: Colors.white,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Header with Back and Share buttons
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: horizontalPadding,
-                                  vertical: 24,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.transparent,
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: Colors.grey[300]!,
-                                      width: 1,
-                                    ),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    InkWell(
-                                      onTap: () => Navigator.of(context).pop(),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.arrow_back,
-                                            size: 24,
-                                            color: Color(0xFF090919),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          const Text(
-                                            'Back to Products',
-                                            style: TextStyle(
-                                              color: Color(0xFF090919),
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w500,
-                                              height: 1.33,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: isMobile
+                        ? // Mobile: Full width with 16px padding (no maxWidth constraint)
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Header + main hero section (no tinted background)
+                                Container(
+                                  color: Colors.white,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Header with Back and Share buttons
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: horizontalPadding,
+                                          vertical: 24,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.transparent,
+                                          border: Border(
+                                            bottom: BorderSide(
+                                              color: Colors.grey[300]!,
+                                              width: 1,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF090919),
-                                        borderRadius: BorderRadius.circular(58),
-                                      ),
-                                      child: InkWell(
-                                        onTap: _handleShare,
+                                        ),
                                         child: Row(
-                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
-                                            const Text(
-                                              'Share',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                height: 1.43,
+                                            InkWell(
+                                              onTap: () =>
+                                                  Navigator.of(context).pop(),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.arrow_back,
+                                                    size: 24,
+                                                    color: Color(0xFF090919),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  const Text(
+                                                    'Back to Products',
+                                                    style: TextStyle(
+                                                      color: Color(0xFF090919),
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      height: 1.33,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
-                                            const SizedBox(width: 12),
-                                            const Icon(
-                                              Icons.share,
-                                              size: 20,
-                                              color: Colors.white,
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 10,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF090919),
+                                                borderRadius:
+                                                    BorderRadius.circular(58),
+                                              ),
+                                              child: InkWell(
+                                                onTap: _handleShare,
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Text(
+                                                      'Share',
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        height: 1.43,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    const Icon(
+                                                      Icons.share,
+                                                      size: 20,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
 
-                              // Main Content
-                              Padding(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: horizontalPadding,
-                                  vertical: 32,
+                                      // Main Content - Mobile layout (centered column)
+                                      Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: horizontalPadding,
+                                          vertical: 32,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            // Centered image gallery
+                                            Center(child: _buildImageGallery()),
+                                            SizedBox(
+                                              height:
+                                                  ResponsiveHelper.getResponsiveSpacing(
+                                                    context,
+                                                    mobile: 24,
+                                                    tablet: 28,
+                                                    desktop: 32,
+                                                  ),
+                                            ),
+                                            // Product details (left-aligned for mobile)
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: _buildProductDetails(),
+                                            ),
+                                            SizedBox(
+                                              height:
+                                                  ResponsiveHelper.getResponsiveSpacing(
+                                                    context,
+                                                    mobile: 24,
+                                                    tablet: 28,
+                                                    desktop: 32,
+                                                  ),
+                                            ),
+                                            // Key features (left-aligned for mobile)
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: _buildKeyFeatures(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final isTablet = ResponsiveHelper.isTablet(
-                                      context,
-                                    );
 
-                                    // Desktop: Side-by-side layout
-                                    if (isDesktop && !isTablet) {
-                                      return Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          // Left: Image Gallery
-                                          Flexible(
-                                            flex: 1,
-                                            child: _buildImageGallery(),
+                                // Technical Specifications
+                                Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: horizontalPadding,
+                                    vertical: 32,
+                                  ),
+                                  child: _buildTechnicalSpecs(),
+                                ),
+
+                                // Similar Products
+                                Padding(
+                                  padding: EdgeInsets.only(top: 64, bottom: 32),
+                                  child: _buildSimilarProducts(),
+                                ),
+
+                                // Footer
+                                Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: horizontalPadding,
+                                    vertical: 32,
+                                  ),
+                                  child: Center(
+                                    child: RichText(
+                                      text: TextSpan(
+                                        text: 'Built by ',
+                                        style: TextStyle(
+                                          color: const Color(0xFFBABABA),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        children: const [
+                                          TextSpan(
+                                            text: 'Ruditech',
+                                            style: TextStyle(
+                                              color: Color(0xFF5D8BFF),
+                                              fontWeight: FontWeight.w400,
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
                                           ),
-                                          const SizedBox(width: 56),
-                                          // Right: Product Details and Key Features
-                                          Flexible(
-                                            flex: 1,
-                                            child: SingleChildScrollView(
-                                              child: Column(
+                                        ],
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 32),
+                              ],
+                            ),
+                          )
+                        : // Tablet/Desktop: Use maxWidth constraint
+                          Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: maxWidth,
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Header + main hero section
+                                  Container(
+                                    color: Colors.white,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Header with Back and Share buttons
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: horizontalPadding,
+                                            vertical: 24,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.transparent,
+                                            border: Border(
+                                              bottom: BorderSide(
+                                                color: Colors.grey[300]!,
+                                                width: 1,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              InkWell(
+                                                onTap: () =>
+                                                    Navigator.of(context).pop(),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: const [
+                                                    Icon(
+                                                      Icons.arrow_back,
+                                                      size: 24,
+                                                      color: Color(0xFF090919),
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Text(
+                                                      'Back to Products',
+                                                      style: TextStyle(
+                                                        color: Color(
+                                                          0xFF090919,
+                                                        ),
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        height: 1.33,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 10,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFF090919,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(58),
+                                                ),
+                                                child: InkWell(
+                                                  onTap: _handleShare,
+                                                  child: const Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        'Share',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          height: 1.43,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 12),
+                                                      Icon(
+                                                        Icons.share,
+                                                        size: 20,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+
+                                        // Main Content
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: horizontalPadding,
+                                            vertical: 32,
+                                          ),
+                                          child: LayoutBuilder(
+                                            builder: (context, constraints) {
+                                              // Desktop: Side-by-side layout
+                                              if (isDesktop && !isTablet) {
+                                                return Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    // Left: Image Gallery
+                                                    Flexible(
+                                                      flex: 1,
+                                                      child:
+                                                          _buildImageGallery(),
+                                                    ),
+                                                    const SizedBox(width: 56),
+                                                    // Right: Product Details and Key Features
+                                                    Flexible(
+                                                      flex: 1,
+                                                      child: SingleChildScrollView(
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            _buildProductDetails(),
+                                                            SizedBox(
+                                                              height:
+                                                                  ResponsiveHelper.getResponsiveSpacing(
+                                                                    context,
+                                                                    mobile: 20,
+                                                                    tablet: 20,
+                                                                    desktop: 20,
+                                                                  ),
+                                                            ),
+                                                            _buildKeyFeatures(),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              }
+
+                                              // Tablet/iPad: Centered column layout
+                                              return Column(
                                                 crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
+                                                    CrossAxisAlignment.center,
                                                 children: [
-                                                  _buildProductDetails(),
+                                                  Center(
+                                                    child: _buildImageGallery(),
+                                                  ),
                                                   SizedBox(
                                                     height:
                                                         ResponsiveHelper.getResponsiveSpacing(
                                                           context,
-                                                          mobile: 20,
-                                                          tablet: 20,
-                                                          desktop: 20,
+                                                          mobile: 24,
+                                                          tablet: 28,
+                                                          desktop: 32,
                                                         ),
                                                   ),
-                                                  _buildKeyFeatures(),
+                                                  Align(
+                                                    alignment: isTablet
+                                                        ? Alignment.center
+                                                        : Alignment.centerLeft,
+                                                    child:
+                                                        _buildProductDetails(),
+                                                  ),
+                                                  SizedBox(
+                                                    height:
+                                                        ResponsiveHelper.getResponsiveSpacing(
+                                                          context,
+                                                          mobile: 24,
+                                                          tablet: 28,
+                                                          desktop: 32,
+                                                        ),
+                                                  ),
+                                                  Align(
+                                                    alignment: isTablet
+                                                        ? Alignment.center
+                                                        : Alignment.centerLeft,
+                                                    child: _buildKeyFeatures(),
+                                                  ),
                                                 ],
-                                              ),
-                                            ),
+                                              );
+                                            },
                                           ),
-                                        ],
-                                      );
-                                    }
-
-                                    // Tablet/iPad and Mobile: Centered column layout
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        // Centered image gallery
-                                        Center(child: _buildImageGallery()),
-                                        SizedBox(
-                                          height:
-                                              ResponsiveHelper.getResponsiveSpacing(
-                                                context,
-                                                mobile: 24,
-                                                tablet: 28,
-                                                desktop: 32,
-                                              ),
-                                        ),
-                                        // Product details (centered for tablet, left-aligned for mobile)
-                                        Align(
-                                          alignment: isTablet
-                                              ? Alignment.center
-                                              : Alignment.centerLeft,
-                                          child: _buildProductDetails(),
-                                        ),
-                                        SizedBox(
-                                          height:
-                                              ResponsiveHelper.getResponsiveSpacing(
-                                                context,
-                                                mobile: 24,
-                                                tablet: 28,
-                                                desktop: 32,
-                                              ),
-                                        ),
-                                        // Key features (centered for tablet, left-aligned for mobile)
-                                        Align(
-                                          alignment: isTablet
-                                              ? Alignment.center
-                                              : Alignment.centerLeft,
-                                          child: _buildKeyFeatures(),
                                         ),
                                       ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Technical Specifications
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: horizontalPadding,
-                            vertical: 32,
-                          ),
-                          child: _buildTechnicalSpecs(),
-                        ),
-
-                        // Similar Products
-                        Padding(
-                          padding: EdgeInsets.only(top: 64, bottom: 32),
-                          child: _buildSimilarProducts(),
-                        ),
-
-                        // Footer
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 32),
-                          child: Center(
-                            child: RichText(
-                              text: TextSpan(
-                                text: 'Built by ',
-                                style: TextStyle(
-                                  color: const Color(0xFFBABABA),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                children: const [
-                                  TextSpan(
-                                    text: 'Ruditech',
-                                    style: TextStyle(
-                                      color: Color(0xFF5D8BFF),
-                                      fontWeight: FontWeight.w400,
-                                      decoration: TextDecoration.underline,
                                     ),
                                   ),
+
+                                  // Technical Specifications
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: horizontalPadding,
+                                      vertical: 32,
+                                    ),
+                                    child: _buildTechnicalSpecs(),
+                                  ),
+
+                                  // Similar Products
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      top: 64,
+                                      bottom: 32,
+                                    ),
+                                    child: _buildSimilarProducts(),
+                                  ),
+
+                                  // Footer
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: horizontalPadding,
+                                      vertical: 32,
+                                    ),
+                                    child: Center(
+                                      child: RichText(
+                                        text: TextSpan(
+                                          text: 'Built by ',
+                                          style: TextStyle(
+                                            color: const Color(0xFFBABABA),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                          children: const [
+                                            TextSpan(
+                                              text: 'Ruditech',
+                                              style: TextStyle(
+                                                color: Color(0xFF5D8BFF),
+                                                fontWeight: FontWeight.w400,
+                                                decoration:
+                                                    TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 32),
                                 ],
                               ),
-                              textAlign: TextAlign.center,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 32),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
     );
@@ -2331,13 +2554,13 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   }
 
   Widget _buildSimilarProducts() {
-    final isTablet = ResponsiveHelper.isTablet(context);
-    final isDesktop = ResponsiveHelper.isDesktop(context);
-    final horizontalPadding = _getHorizontalPadding(context);
+    final bool isMobile = ResponsiveHelper.isMobile(context);
+    final bool isTablet = ResponsiveHelper.isTablet(context);
+    final bool isDesktop = ResponsiveHelper.isDesktop(context);
 
     if (_isLoadingSimilar) {
       return Padding(
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        padding: EdgeInsets.all(isMobile ? 32.0 : 48.0),
         child: const Center(
           child: CircularProgressIndicator(color: Color(0xFFDC2626)),
         ),
@@ -2348,14 +2571,54 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      child: Column(
+    // Use exact same padding pattern as ProductGrid - 16px for mobile, 24px for tablet, 32px for desktop
+    final double padding = isDesktop ? 32.0 : (isTablet ? 24.0 : 16.0);
+
+    // On mobile, use simple column layout (parent handles full width)
+    if (isMobile) {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Section Title
-          Text(
+          // Section Title - with same padding as grid to align content (16px mobile)
+          Padding(
+            padding: EdgeInsets.only(left: padding, right: padding),
+            child: Text(
+              'Similar Products',
+              style: TextStyle(
+                color: const Color(0xFF090919),
+                fontSize: ResponsiveHelper.getResponsiveFontSize(
+                  context,
+                  mobile: 20,
+                  tablet: 21,
+                  desktop: 22,
+                ),
+                fontWeight: FontWeight.w600,
+                height: 1.36,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: ResponsiveHelper.getResponsiveSpacing(
+              context,
+              mobile: 20,
+              tablet: 24,
+              desktop: 28,
+            ),
+          ),
+          // Similar Products Grid - padding applied to GridView to match ProductGrid exactly (16px mobile)
+          _buildSimilarProductsGrid(padding),
+        ],
+      );
+    }
+
+    // For tablet and desktop, use standard layout
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Title - with same padding as grid to align content (24px tablet, 32px desktop)
+        Padding(
+          padding: EdgeInsets.only(left: padding, right: padding),
+          child: Text(
             'Similar Products',
             style: TextStyle(
               color: const Color(0xFF090919),
@@ -2369,45 +2632,61 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               height: 1.36,
             ),
           ),
-          SizedBox(
-            height: ResponsiveHelper.getResponsiveSpacing(
-              context,
-              mobile: 20,
-              tablet: 24,
-              desktop: 28,
-            ),
+        ),
+        SizedBox(
+          height: ResponsiveHelper.getResponsiveSpacing(
+            context,
+            mobile: 20,
+            tablet: 24,
+            desktop: 28,
           ),
-          // Similar Products Grid
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // Calculate grid layout
-              final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 2);
-              // Use same aspect ratios as product grid to prevent overflow
-              // Reduced aspect ratios give more vertical space to prevent text truncation
-              final childAspectRatio = isDesktop
-                  ? 0.70
-                  : (isTablet ? 0.60 : 0.56);
-              final spacing = isDesktop ? 24.0 : (isTablet ? 20.0 : 16.0);
+        ),
+        // Similar Products Grid - padding applied to GridView to match ProductGrid exactly
+        _buildSimilarProductsGrid(padding),
+      ],
+    );
+  }
 
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: childAspectRatio,
-                  crossAxisSpacing: spacing,
-                  mainAxisSpacing: spacing,
-                ),
-                itemCount: _similarProducts.length,
-                itemBuilder: (context, index) {
-                  final product = _similarProducts[index];
-                  return ProductCard(product: product);
-                },
-              );
-            },
-          ),
-        ],
+  Widget _buildSimilarProductsGrid(double padding) {
+    final bool isTablet = ResponsiveHelper.isTablet(context);
+    final bool isDesktop = ResponsiveHelper.isDesktop(context);
+
+    // Calculate grid layout - same as ProductGrid
+    final int crossAxisCount = isDesktop ? 3 : 2;
+    // Use same aspect ratios as product grid to prevent overflow
+    final double childAspectRatio = isDesktop ? 0.70 : (isTablet ? 0.60 : 0.56);
+
+    // Spacing must be double - same as ProductGrid (16px mobile, 24px tablet, 32px desktop)
+    final double crossAxisSpacing = ResponsiveHelper.getResponsiveSpacing(
+      context,
+      mobile: 16.0,
+      tablet: 24.0,
+      desktop: 32.0,
+    );
+
+    final double mainAxisSpacing = ResponsiveHelper.getResponsiveSpacing(
+      context,
+      mobile: 16.0,
+      tablet: 24.0,
+      desktop: 32.0,
+    );
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(
+        padding,
+      ), // Exact same padding as ProductGrid (16px mobile, 24px tablet, 32px desktop)
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: childAspectRatio,
+        crossAxisSpacing: crossAxisSpacing,
+        mainAxisSpacing: mainAxisSpacing,
       ),
+      itemCount: _similarProducts.length,
+      itemBuilder: (context, index) {
+        return ProductCard(product: _similarProducts[index]);
+      },
     );
   }
 }

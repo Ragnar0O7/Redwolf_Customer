@@ -135,20 +135,27 @@ class _ProductCardState extends State<ProductCard> {
                     if (widget.product.category.isNotEmpty)
                       SizedBox(height: isMobileOrTablet ? 8 : 12),
 
-                    // Product name - matching design specs
-                    Text(
-                      widget.product.name,
-                      maxLines: 2, // Allow 2 lines for longer names
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: isMobileOrTablet
-                            ? 14
-                            : 16, // 14px for mobile/tablet (design spec), 16px for desktop
-                        fontWeight: FontWeight.w500, // 500 weight (design spec)
-                        height: isMobileOrTablet
-                            ? 1.428
-                            : 1.5, // 20px line height for mobile/tablet (20/14 = 1.428) (design spec)
-                        color: Colors.black,
+                    // Product name - flexible for multi-line text based on screen size
+                    // Wrap in SizedBox to ensure it uses full available width for proper text wrapping
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        widget.product.name,
+                        maxLines: 2, // Allow 2 lines for longer names
+                        overflow: TextOverflow.ellipsis,
+                        softWrap:
+                            true, // Enable text wrapping to adapt to different phone widths
+                        style: TextStyle(
+                          fontSize: isMobileOrTablet
+                              ? 14
+                              : 16, // 14px for mobile/tablet (design spec), 16px for desktop
+                          fontWeight:
+                              FontWeight.w500, // 500 weight (design spec)
+                          height: isMobileOrTablet
+                              ? 1.428
+                              : 1.5, // 20px line height for mobile/tablet (20/14 = 1.428) (design spec)
+                          color: Colors.black,
+                        ),
                       ),
                     ),
 
