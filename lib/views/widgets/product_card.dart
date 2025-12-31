@@ -26,7 +26,8 @@ class _ProductCardState extends State<ProductCard> {
     final isMobileOrTablet = isMobile || isTablet;
     
     // Get text scale factor to handle large display sizes
-    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    final textScaler = MediaQuery.of(context).textScaler;
+    final textScaleFactor = textScaler.scale(1.0);
     final isLargeDisplaySize = textScaleFactor > 1.1; // Detect large display size setting
     
     // For mobile and tablet: use 12px padding as per design spec
