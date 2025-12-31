@@ -2382,9 +2382,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
             builder: (context, constraints) {
               // Calculate grid layout
               final crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 2);
+              // Use same aspect ratios as product grid to prevent overflow
+              // Reduced aspect ratios give more vertical space to prevent text truncation
               final childAspectRatio = isDesktop
                   ? 0.70
-                  : (isTablet ? 0.75 : 0.70);
+                  : (isTablet ? 0.60 : 0.56);
               final spacing = isDesktop ? 24.0 : (isTablet ? 20.0 : 16.0);
 
               return GridView.builder(

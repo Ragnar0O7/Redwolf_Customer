@@ -26,10 +26,10 @@ class _ProductCardState extends State<ProductCard> {
     final isMobileOrTablet = isMobile || isTablet;
 
     // For mobile and tablet: use 12px padding as per design spec
-    // Slightly reduced bottom padding to eliminate remaining overflow
+    // Reduced padding to eliminate remaining overflow
     // For desktop: keep existing padding (web interface is perfect)
     final contentPadding = isMobileOrTablet
-        ? const EdgeInsets.fromLTRB(12, 12, 12, 10)
+        ? const EdgeInsets.fromLTRB(12, 10, 12, 8)
         : const EdgeInsets.all(16);
 
     return InkWell(
@@ -131,9 +131,9 @@ class _ProductCardState extends State<ProductCard> {
                       ),
 
                     // 12 PX spacing between tag and title (design spec)
-                    // Reduced to 10px for mobile/tablet to prevent overflow
+                    // Reduced to 8px for mobile/tablet to prevent overflow
                     if (widget.product.category.isNotEmpty)
-                      SizedBox(height: isMobileOrTablet ? 10 : 12),
+                      SizedBox(height: isMobileOrTablet ? 8 : 12),
 
                     // Product name - matching design specs
                     Text(
@@ -153,8 +153,8 @@ class _ProductCardState extends State<ProductCard> {
                     ),
 
                     // 16 PX spacing between title and view details (design spec)
-                    // Reduced to 11px for mobile/tablet to prevent overflow in constrained grid
-                    SizedBox(height: isMobileOrTablet ? 11 : 16),
+                    // Reduced to 8px for mobile/tablet to prevent overflow in constrained grid
+                    SizedBox(height: isMobileOrTablet ? 8 : 16),
 
                     // View details CTA - matching design specs
                     Row(
