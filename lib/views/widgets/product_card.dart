@@ -24,12 +24,22 @@ class _ProductCardState extends State<ProductCard> {
     final isMobile = ResponsiveHelper.isMobile(context);
     final isTablet = ResponsiveHelper.isTablet(context);
     final isMobileOrTablet = isMobile || isTablet;
-
+    
+    // Get text scale factor to handle large display sizes
+    final textScaler = MediaQuery.of(context).textScaler;
+    final textScaleFactor = textScaler.scale(1.0);
+    final isLargeDisplaySize = textScaleFactor > 1.1; // Detect large display size setting
+    
     // For mobile and tablet: use 12px padding as per design spec
-    // Reduced padding to eliminate remaining overflow
+    // Adjust padding based on text scale to prevent overflow
     // For desktop: keep existing padding (web interface is perfect)
     final contentPadding = isMobileOrTablet
-        ? const EdgeInsets.fromLTRB(12, 10, 12, 8)
+        ? EdgeInsets.fromLTRB(
+            12,
+            isLargeDisplaySize ? 8 : 10, // Reduce top padding for large display
+            12,
+            isLargeDisplaySize ? 6 : 8, // Reduce bottom padding for large display
+          )
         : const EdgeInsets.all(16);
 
     return InkWell(
@@ -46,7 +56,7 @@ class _ProductCardState extends State<ProductCard> {
             /// IMAGE - With zoom animation on hover (container border preserved)
             Expanded(
               flex: isMobileOrTablet
-                  ? 2
+                  ? (isLargeDisplaySize ? 1 : 2) // Further reduce for large display size
                   : 3, // Reduced flex for mobile/tablet to give more space to content
               child: Container(
                 clipBehavior: Clip.hardEdge,
@@ -120,20 +130,27 @@ class _ProductCardState extends State<ProductCard> {
                         child: Text(
                           widget.product.category,
                           style: TextStyle(
-                            fontSize: 10, // 10px font size (design spec)
+                            fontSize: isLargeDisplaySize && isMobileOrTablet
+                                ? 9
+                                : 10, // Slightly reduce for large display
                             color: Colors.grey[700],
                             fontWeight:
                                 FontWeight.w400, // 400 weight (design spec)
-                            height:
-                                1.4, // 14px line height (14/10 = 1.4) (design spec)
+                            height: isLargeDisplaySize && isMobileOrTablet
+                                ? 1.3
+                                : 1.4, // Reduce line height for large display
                           ),
                         ),
                       ),
 
                     // 12 PX spacing between tag and title (design spec)
-                    // Reduced to 8px for mobile/tablet to prevent overflow
+                    // Adjust based on display size to prevent overflow
                     if (widget.product.category.isNotEmpty)
-                      SizedBox(height: isMobileOrTablet ? 8 : 12),
+                      SizedBox(
+                        height: isMobileOrTablet
+                            ? (isLargeDisplaySize ? 6 : 8)
+                            : 12,
+                      ),
 
                     // Product name - flexible for multi-line text based on screen size
                     // Wrap in SizedBox to ensure it uses full available width for proper text wrapping
@@ -147,21 +164,25 @@ class _ProductCardState extends State<ProductCard> {
                             true, // Enable text wrapping to adapt to different phone widths
                         style: TextStyle(
                           fontSize: isMobileOrTablet
-                              ? 14
-                              : 16, // 14px for mobile/tablet (design spec), 16px for desktop
+                              ? (isLargeDisplaySize ? 13 : 14)
+                              : 16, // Slightly reduce for large display
                           fontWeight:
                               FontWeight.w500, // 500 weight (design spec)
                           height: isMobileOrTablet
-                              ? 1.428
-                              : 1.5, // 20px line height for mobile/tablet (20/14 = 1.428) (design spec)
+                              ? (isLargeDisplaySize ? 1.3 : 1.428)
+                              : 1.5, // Reduce line height for large display
                           color: Colors.black,
                         ),
                       ),
                     ),
 
                     // 16 PX spacing between title and view details (design spec)
-                    // Reduced to 8px for mobile/tablet to prevent overflow in constrained grid
-                    SizedBox(height: isMobileOrTablet ? 8 : 16),
+                    // Adjust based on display size to prevent overflow
+                    SizedBox(
+                      height: isMobileOrTablet
+                          ? (isLargeDisplaySize ? 6 : 8)
+                          : 16,
+                    ),
 
                     // View details CTA - matching design specs
                     Row(
@@ -174,16 +195,19 @@ class _ProductCardState extends State<ProductCard> {
                             fontWeight:
                                 FontWeight.w600, // 600 weight (design spec)
                             fontSize: isMobileOrTablet
-                                ? 12
-                                : 14, // 12px for mobile/tablet (design spec)
-                            height:
-                                1.5, // 18px line height (18/12 = 1.5) (design spec)
+                                ? (isLargeDisplaySize ? 11 : 12)
+                                : 14, // Slightly reduce for large display
+                            height: isLargeDisplaySize && isMobileOrTablet
+                                ? 1.4
+                                : 1.5, // Reduce line height for large display
                           ),
                         ),
                         const SizedBox(width: 2),
                         Icon(
                           Icons.arrow_forward,
-                          size: isMobileOrTablet ? 12 : 14, // Match font size
+                          size: isMobileOrTablet
+                              ? (isLargeDisplaySize ? 11 : 12)
+                              : 14, // Match font size, reduce for large display
                           color: const Color(0xFFDC2626),
                         ),
                       ],

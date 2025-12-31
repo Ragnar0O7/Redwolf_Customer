@@ -49,6 +49,9 @@ final GoRouter _router = GoRouter(
           return const HomeView();
         }
         
+
+
+        
         // Try to get product from controller first (faster)
         final controller = Provider.of<ProductController>(context, listen: false);
         try {
