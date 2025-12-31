@@ -33,7 +33,8 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/',
       name: 'home',
-      builder: (context, state) => const HomeView(),
+      builder: (context, state) =>`````````````-
+      +` const HomeView(),
     ),
     GoRoute(
       path: '/product/:id',
