@@ -88,12 +88,12 @@ class ProductGrid extends StatelessWidget {
         : (isDesktop ? 3 : (isTablet ? 2 : 1));
 
     // Aspect ratios must be double
-    // Balanced ratios to prevent overflow while minimizing blank space
+    // Balanced ratios to prevent overflow with slightly reduced image size
     // Adjusted for mobile/tablet to accommodate design spec spacing
     final double childAspectRatio = layout == ProductLayout.grid2
         ? (isDesktop
               ? 0.68
-              : (isTablet ? 0.60 : 0.56)) // Reduced for more vertical space
+              : (isTablet ? 0.54 : 0.50)) // Balanced ratio for reduced image size
         : (isDesktop
               ? 0.72
               : (isTablet ? 0.66 : 0.60)); // Reduced for more vertical space

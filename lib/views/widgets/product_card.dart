@@ -31,14 +31,14 @@ class _ProductCardState extends State<ProductCard> {
     final isLargeDisplaySize = textScaleFactor > 1.1; // Detect large display size setting
     
     // For mobile and tablet: use 12px padding as per design spec
-    // Adjust padding based on text scale to prevent overflow
+    // Aggressively reduce padding to prevent overflow
     // For desktop: keep existing padding (web interface is perfect)
     final contentPadding = isMobileOrTablet
         ? EdgeInsets.fromLTRB(
             12,
-            isLargeDisplaySize ? 8 : 10, // Reduce top padding for large display
+            isLargeDisplaySize ? 6 : 8, // Aggressively reduce top padding
             12,
-            isLargeDisplaySize ? 6 : 8, // Reduce bottom padding for large display
+            isLargeDisplaySize ? 4 : 6, // Aggressively reduce bottom padding
           )
         : const EdgeInsets.all(16);
 
@@ -52,12 +52,13 @@ class _ProductCardState extends State<ProductCard> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min, // Ensure column doesn't overflow
           children: [
             /// IMAGE - With zoom animation on hover (container border preserved)
             Expanded(
               flex: isMobileOrTablet
-                  ? (isLargeDisplaySize ? 1 : 2) // Further reduce for large display size
-                  : 3, // Reduced flex for mobile/tablet to give more space to content
+                  ? (isLargeDisplaySize ? 2 : 2) // Reduced flex slightly to prevent overflow
+                  : 3, // Desktop flex ratio
               child: Container(
                 clipBehavior: Clip.hardEdge,
                 decoration: const BoxDecoration(),
@@ -109,10 +110,13 @@ class _ProductCardState extends State<ProductCard> {
               fit: FlexFit.loose,
               child: Container(
                 padding: contentPadding,
-                constraints: const BoxConstraints(minHeight: 0),
+                constraints: const BoxConstraints(
+                  minHeight: 0,
+                  maxHeight: double.infinity, // Allow content to shrink if needed
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min, // Use minimum space needed
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     // Category tag - matching design specs
@@ -144,11 +148,11 @@ class _ProductCardState extends State<ProductCard> {
                       ),
 
                     // 12 PX spacing between tag and title (design spec)
-                    // Adjust based on display size to prevent overflow
+                    // Aggressively reduce spacing to prevent overflow
                     if (widget.product.category.isNotEmpty)
                       SizedBox(
                         height: isMobileOrTablet
-                            ? (isLargeDisplaySize ? 6 : 8)
+                            ? (isLargeDisplaySize ? 4 : 6)
                             : 12,
                       ),
 
@@ -177,10 +181,10 @@ class _ProductCardState extends State<ProductCard> {
                     ),
 
                     // 16 PX spacing between title and view details (design spec)
-                    // Adjust based on display size to prevent overflow
+                    // Aggressively reduce spacing to prevent overflow
                     SizedBox(
                       height: isMobileOrTablet
-                          ? (isLargeDisplaySize ? 6 : 8)
+                          ? (isLargeDisplaySize ? 4 : 6)
                           : 16,
                     ),
 
@@ -223,3 +227,4 @@ class _ProductCardState extends State<ProductCard> {
     );
   }
 }
+

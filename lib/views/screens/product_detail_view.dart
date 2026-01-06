@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../models/product.dart';
 import 'ar_view_screen.dart';
 import '../../services/product_detail_service.dart';
@@ -1430,8 +1431,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             ),
                           ),
                           SizedBox(width: isMobile ? 4 : 8),
-                          Icon(
-                            Icons.chat_bubble_outline,
+                          FaIcon(
+                            FontAwesomeIcons.whatsapp,
                             size: iconSize,
                             color: const Color(0xFFED1F24),
                           ),
@@ -2680,8 +2681,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
     // Calculate grid layout - same as ProductGrid
     final int crossAxisCount = isDesktop ? 3 : 2;
-    // Use same aspect ratios as product grid to prevent overflow
-    final double childAspectRatio = isDesktop ? 0.70 : (isTablet ? 0.60 : 0.56);
+    // Balanced aspect ratios for reduced image size to prevent overflow
+    final double childAspectRatio = isDesktop ? 0.70 : (isTablet ? 0.54 : 0.50);
 
     // Spacing must be double - same as ProductGrid (16px mobile, 24px tablet, 32px desktop)
     final double crossAxisSpacing = ResponsiveHelper.getResponsiveSpacing(
