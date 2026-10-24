@@ -81,11 +81,13 @@ class _WhatsAppOutlinePainter extends CustomPainter {
     path.cubicTo(s * 8.836, s * 6.341, s * 8.591, s * 6.419, s * 8.409, s * 6.410);
     path.lineTo(s * 7.839, s * 6.400);
     path.cubicTo(s * 7.641, s * 6.400, s * 7.319, s * 6.474, s * 7.047, s * 6.772);
-    path.cubicTo(s * 7.196, s * 6.970, s * 9.142, s * 9.972, s * 12.123, s * 11.259);
-    path.cubicTo(s * 12.832, s * 11.565, s * 13.386, s * 11.748, s * 13.817, s * 11.885);
-    path.cubicTo(s * 14.529, s * 12.111, s * 15.177, s * 12.079, s * 15.689, s * 12.003);
-    path.cubicTo(s * 16.260, s * 11.918, s * 17.447, s * 11.284, s * 17.695, s * 10.590);
-    path.cubicTo(s * 17.943, s * 9.895, s * 17.943, s * 9.300, s * 17.868, s * 9.176);
+    path.cubicTo(s * 6.775, s * 7.070, s * 6.007, s * 7.788, s * 6.007, s * 9.251);
+    path.cubicTo(s * 6.007, s * 10.714, s * 7.072, s * 12.127, s * 7.220, s * 12.325);
+    path.cubicTo(s * 7.369, s * 12.523, s * 9.315, s * 15.525, s * 12.296, s * 16.812);
+    path.cubicTo(s * 13.005, s * 17.118, s * 13.559, s * 17.301, s * 13.990, s * 17.438);
+    path.cubicTo(s * 14.702, s * 17.664, s * 15.350, s * 17.632, s * 15.862, s * 17.556);
+    path.cubicTo(s * 16.433, s * 17.471, s * 17.620, s * 16.837, s * 17.868, s * 16.143);
+    path.cubicTo(s * 18.116, s * 15.448, s * 18.116, s * 14.853, s * 18.041, s * 14.729);
     path.close();
 
     canvas.drawPath(path, paint);
