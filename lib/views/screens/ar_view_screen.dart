@@ -5,8 +5,6 @@ import '../widgets/simple_ar_viewer.dart';
 import '../../services/device_detection_service.dart';
 import '../../services/ar_analytics_service.dart';
 import '../../services/analytics_service.dart';
-import 'ar_view_for_3d_objects_stub.dart'
-    if (dart.library.io) 'ar_view_for_3d_objects.dart';
 import 'product_detail_view_web_stub.dart'
     if (dart.library.html) 'product_detail_view_web.dart'
     as web_utils;
@@ -74,13 +72,6 @@ class _ARViewScreenState extends State<ARViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use native AR for mobile/tablet (iOS/Android)
-    if (!kIsWeb) {
-      return ArViewFor3dObjects(
-        name: widget.product.name,
-        model3dUrl: widget.modelUrl,
-      );
-    }
 
     // Web platform - use web-based AR viewer
     // Check if device is iPad - iPad should use Apple Quick Look, not this screen
