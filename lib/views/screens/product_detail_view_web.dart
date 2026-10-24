@@ -329,8 +329,7 @@ class WebUtils {
       // The rel="ar" attribute tells Safari to open the file in AR Quick Look
       // Note: Autorotate must be enabled in the USDZ file itself, not via URL
       final anchor = html.AnchorElement()
-        ..href =
-            encodedUrl // Use properly encoded URL
+        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=1'
         ..rel =
             'ar' // Critical: This attribute triggers AR Quick Look
         ..style.position = 'fixed'
@@ -338,16 +337,20 @@ class WebUtils {
         ..style.top = '0'
         ..style.width = '1px'
         ..style.height = '1px'
-        ..style.opacity = '0'
+        ..style.opacity = '0.01'
         ..style.pointerEvents = 'none'
         ..setAttribute('aria-hidden', 'true');
 
-      // Apple Quick Look requirement: Must contain a child <img> element.
-      // Without this, iOS Safari triggers a raw file download instead of opening Quick Look AR.
+      // Apple Quick Look requirement: First child MUST be a rendered <img> element.
+      // NOTE: Never use display='none', as WebKit treats hidden images as unrendered and triggers a raw download dialog.
       final img = html.ImageElement()
-        ..src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1" height="1"%3E%3C/svg%3E'
-        ..alt = 'AR Preview'
-        ..style.display = 'none';
+        ..src =
+            'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+        ..alt = 'AR Quick Look'
+        ..style.width = '1px'
+        ..style.height = '1px'
+        ..style.opacity = '0.01'
+        ..style.position = 'fixed';
       anchor.append(img);
 
       // Add to document body

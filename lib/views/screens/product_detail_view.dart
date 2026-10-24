@@ -2084,11 +2084,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         }
 
                                         // Sanitize direct model URL (spaces replaced with %20 for valid URI path)
+                                        // Keep https:// scheme intact - DO NOT percent-encode the whole URL with Uri.encodeComponent,
+                                        // as Google Scene Viewer fails to resolve https%3A%2F%2F and immediately aborts to fallback.
                                         final rawDirectUrl = directModelUrl.trim();
                                         final sanitizedDirectUrl = rawDirectUrl.replaceAll(' ', '%20');
 
-                                        // Encode model URL and metadata for Google Scene Viewer
-                                        final encodedModelUrl = Uri.encodeComponent(sanitizedDirectUrl);
                                         final encodedTitle = Uri.encodeComponent(_product.name);
                                         final productFallback = 'https://ar.redwolfmedia.in/product/${_product.id ?? ''}';
                                         final encodedFallbackUrl = Uri.encodeComponent(productFallback);
@@ -2097,8 +2097,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         // ar_preferred launches directly into AR while gracefully showing 3D if ARCore needs calibration,
                                         // preventing immediate bounce back to the browser.
                                         final sceneViewerUrl = kIsWeb
-                                            ? 'intent://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_preferred&title=$encodedTitle&resizable=true#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=$encodedFallbackUrl;end;'
-                                            : 'https://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_preferred&title=$encodedTitle&resizable=true';
+                                            ? 'intent://arvr.google.com/scene-viewer/1.0?file=$sanitizedDirectUrl&mode=ar_preferred&title=$encodedTitle&resizable=true#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=$encodedFallbackUrl;end;'
+                                            : 'https://arvr.google.com/scene-viewer/1.0?file=$sanitizedDirectUrl&mode=ar_preferred&title=$encodedTitle&resizable=true';
 
                                         if (kDebugMode) {
                                           print(
