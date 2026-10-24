@@ -2108,7 +2108,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                             'Direct Model URL: $sanitizedDirectUrl',
                                           );
                                           print(
-                                            'Encoded URL: $encodedModelUrl',
+                                            'Sanitized Model URL: $sanitizedDirectUrl',
                                           );
                                           print(
                                             'Scene Viewer URL: $sceneViewerUrl',
