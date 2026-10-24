@@ -42,9 +42,12 @@ class _ProductCardState extends State<ProductCard> {
           )
         : const EdgeInsets.all(16);
 
-    return InkWell(
-      onTap: _navigateToDetail,
-      borderRadius: BorderRadius.zero,
+    return Semantics(
+      button: true,
+      label: 'View ${widget.product.name} details',
+      child: InkWell(
+        onTap: _navigateToDetail,
+        borderRadius: BorderRadius.zero,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -222,6 +225,7 @@ class _ProductCardState extends State<ProductCard> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

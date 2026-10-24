@@ -112,31 +112,13 @@ class Product {
         ? fileName.substring(1)
         : fileName;
 
-    // Normalize file name to lowercase to avoid case sensitivity issues
-    // But preserve the path structure if fileName contains folders
-    String normalizedFileName;
+    // Preserve exact case sensitivity for Supabase Storage paths
     if (cleanFileName.contains('/')) {
-      // If fileName already contains folder path, normalize only the filename part
-      final parts = cleanFileName.split('/');
-      final lastPart = parts.last.toLowerCase();
-      normalizedFileName =
-          '${parts.sublist(0, parts.length - 1).join('/')}/$lastPart';
-    } else {
-      normalizedFileName = cleanFileName.toLowerCase();
+      return '$baseUrl/$cleanFileName';
     }
-
-    // Handle if fileName already contains folder path
-    if (normalizedFileName.contains('/')) {
-      return '$baseUrl/$normalizedFileName';
-    }
-    // Handle USDZ files in usdz folder
-    if (folder == 'usdz') {
-      return '$baseUrl/$folder/${Uri.encodeComponent(normalizedFileName)}';
-    }
-    return '$baseUrl/$folder/${Uri.encodeComponent(normalizedFileName)}';
+    return '$baseUrl/$folder/${Uri.encodeComponent(cleanFileName)}';
   }
 
-  // Convert to JSON (for database)
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,

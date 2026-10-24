@@ -342,6 +342,14 @@ class WebUtils {
         ..style.pointerEvents = 'none'
         ..setAttribute('aria-hidden', 'true');
 
+      // Apple Quick Look requirement: Must contain a child <img> element.
+      // Without this, iOS Safari triggers a raw file download instead of opening Quick Look AR.
+      final img = html.ImageElement()
+        ..src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1" height="1"%3E%3C/svg%3E'
+        ..alt = 'AR Preview'
+        ..style.display = 'none';
+      anchor.append(img);
+
       // Add to document body
       html.document.body?.append(anchor);
 

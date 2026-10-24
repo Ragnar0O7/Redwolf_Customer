@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'simple_ar_viewer_web_stub.dart'
@@ -8,6 +9,7 @@ import 'simple_ar_viewer_web_stub.dart'
 /// Uses model-viewer's built-in Scene Viewer for best AR quality
 class SimpleARViewer extends StatefulWidget {
   final String modelUrl;
+  final String? usdzUrl;
   final String? altText;
   final String? productName;
   final VoidCallback? onBackPressed;
@@ -15,6 +17,7 @@ class SimpleARViewer extends StatefulWidget {
   const SimpleARViewer({
     super.key,
     required this.modelUrl,
+    this.usdzUrl,
     this.altText,
     this.productName,
     this.onBackPressed,
@@ -29,6 +32,15 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
   bool _isRegistered = false;
   bool _isLoading = true;
   String? _errorMessage;
+  StreamSubscription? _messageSubscription;
+  Timer? _timeoutTimer;
+
+  @override
+  void dispose() {
+    _messageSubscription?.cancel();
+    _timeoutTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -53,7 +65,7 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
         _setupMessageListener();
 
         // Add timeout to prevent infinite loading
-        Future.delayed(const Duration(seconds: 10), () {
+        _timeoutTimer = Timer(const Duration(seconds: 10), () {
           if (mounted && _isLoading && !_isRegistered) {
             if (kDebugMode) {
               print('⏱️ AR Viewer registration timeout - showing error');
@@ -74,7 +86,8 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
   void _setupMessageListener() {
     if (!kIsWeb) return;
 
-    web_utils.WebUtils.getMessageStream().listen((event) {
+    _messageSubscription?.cancel();
+    _messageSubscription = web_utils.WebUtils.getMessageStream().listen((event) {
       if (event.data is Map && event.data['type'] == 'ar_back') {
         if (widget.onBackPressed != null) {
           widget.onBackPressed!();
@@ -704,18 +717,19 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
     <model-viewer
       id="ar-model"
       src="${_escapeHtmlAttribute(widget.modelUrl)}"
+      ${widget.usdzUrl != null && widget.usdzUrl!.isNotEmpty ? 'ios-src="' + _escapeHtmlAttribute(widget.usdzUrl!) + '"' : ''}
       alt="${_escapeHtmlAttribute(widget.productName ?? '3D Model')}"
       ar
-      ar-modes="scene-viewer webxr quick-look"
-      ar-scale="0.1"
-      scale="0.1"
+      ar-modes="webxr scene-viewer quick-look"
+      ar-scale="auto"
+      ar-placement="floor"
       camera-controls
       shadow-intensity="1.5"
       exposure="1.2"
       environment-image="neutral"
       reveal="auto"
       loading="auto"
-      interaction-policy="allow-when-focused"
+      interaction-policy="always-allow"
       style="width: 100%; height: 100%;"
     >
     </model-viewer>
@@ -840,62 +854,24 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
       loadModelWithCorsWorkaround(originalModelUrl);
     }
 
-    // Function to load model with CORS workaround
+    // Function to load model directly with public HTTPS URL
     async function loadModelWithCorsWorkaround(url) {
       try {
-        console.log('Attempting to load model with CORS workaround...');
+        console.log('Loading 3D model directly from public URL:', url);
         infoText.textContent = 'Loading model...';
         infoText.style.background = 'rgba(0, 0, 0, 0.8)';
         infoText.style.display = 'block';
         
-        // Try method 1: Direct fetch and create blob URL (for model-viewer preview)
-        // This works if CORS allows our domain, but Scene Viewer needs direct URL
-        try {
-          const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            credentials: 'omit',
-            headers: {
-              'Accept': 'model/gltf-binary,application/octet-stream,*/*'
-            }
-          });
-          
-          if (response.ok) {
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            console.log('Successfully created blob URL from fetch');
-            // Use blob URL for preview, but keep original for Scene Viewer
-            // Scene Viewer will use the original URL from ar-modes
-            modelViewer.src = blobUrl;
-            // Also set the original URL as a data attribute for Scene Viewer
-            modelViewer.setAttribute('data-original-src', url);
-          return;
-          }
-        } catch (fetchError) {
-          console.warn('Direct fetch failed (CORS issue):', fetchError);
-          console.warn('This is expected if CORS is not configured. Scene Viewer will try the original URL.');
-        }
-        
-        // For Scene Viewer, we need to use the original URL directly
-        // Scene Viewer handles its own CORS, so it might work even if our fetch fails
-        console.log('Using original URL - Scene Viewer will handle CORS');
+        // Set direct public URL so model-viewer and external Scene Viewer / Quick Look can access it
         modelViewer.src = url;
         
-        // Show helpful message if model loading is slow
         setTimeout(() => {
           if (!modelLoaded && !modelLoadError) {
             console.warn('Model loading is taking longer than expected.');
-            console.warn('Note: Supabase Storage public buckets automatically allow CORS.');
-            console.warn('Please verify:');
-            console.warn('  1. The storage bucket is set to Public (Storage → Buckets)');
-            console.warn('  2. The file URL is accessible:', url);
-            console.warn('  3. Google Scene Viewer may have specific requirements for GLB files');
           }
         }, 3000);
-        
       } catch (error) {
-        console.error('CORS workaround failed:', error);
-        // Fall back to original URL
+        console.error('Failed to set model URL:', error);
         modelViewer.src = url;
       }
     }
@@ -982,7 +958,7 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
       }
       
       try {
-        if (modelViewer.activateAR) {
+        if (false && modelViewer.activateAR) {
           arAutoTriggered = true;
           infoText.textContent = 'Opening AR view...';
           
@@ -1346,9 +1322,9 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
       alert('Product: ' + productName + '\\n\\nAR Controls:\\n- Tap on a flat surface to place the model\\n- Drag to move the model\\n- Zoom: Use the slider or zoom button\\n- Rotate: Use the rotation slider (0°-360°)\\n- Camera: Take a screenshot\\n- Reset: Restore default view\\n\\nNote: If the model appears floating, you can drag it down to the surface.');
     }
     
-    // Initialize zoom slider position
-    updateScale();
-    updateRotation();
+    // Initialize zoom slider position (do not override model natural bounds on load)
+    // updateScale();
+    // updateRotation();
 
     // Go back navigation
     function goBack() {

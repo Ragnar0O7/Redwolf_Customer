@@ -14,8 +14,9 @@ import 'product_detail_view_web_stub.dart'
 class ARViewScreen extends StatefulWidget {
   final Product product;
   final String modelUrl;
+  final String? usdzUrl;
 
-  const ARViewScreen({Key? key, required this.product, required this.modelUrl})
+  const ARViewScreen({Key? key, required this.product, required this.modelUrl, this.usdzUrl})
     : super(key: key);
 
   @override
@@ -165,6 +166,7 @@ class _ARViewScreenState extends State<ARViewScreen> {
             height: constraints.maxHeight > 0 ? constraints.maxHeight : double.infinity,
               child: SimpleARViewer(
                 modelUrl: widget.modelUrl,
+                usdzUrl: widget.usdzUrl ?? widget.product.usdzFileUrl,
                 altText: widget.product.name,
                 productName: widget.product.name,
                 onBackPressed: () => Navigator.of(context).pop(),

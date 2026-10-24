@@ -17,7 +17,6 @@ class SupabaseConfig {
   
   // Supabase API credentials
   static const String publishableKey = 'sb_publishable_wmZqFa8wSJhsyPeWcFOmYg_ta4eoCcS';
-  static const String secretKey = 'sb_secret_9umn23jj2dE7m7x4B5wjuw_tGmHqLqf';
 
   // Background Removal API (remove.bg)
   // Get your free API key from: https://www.remove.bg/api

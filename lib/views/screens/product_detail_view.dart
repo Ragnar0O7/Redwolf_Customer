@@ -1633,9 +1633,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         if (_product.id != null) {
                                           final analyticsService =
                                               AnalyticsService();
-                                          await analyticsService.trackARView(
+                                          analyticsService.trackARView(
                                             _product.id!,
-                                          );
+                                          ).ignore();
                                         }
 
                                         // On web (iPad Safari), use special method to trigger AR Quick Look
@@ -2108,8 +2108,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         // Use Google Scene Viewer URL format to directly open AR
                                         // This will trigger Scene Viewer directly without showing the cube first
                                         // Use the properly encoded URL
-                                        final sceneViewerUrl =
-                                            'https://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_only';
+                                        // For Android Chrome, intent scheme triggers Google Scene Viewer app natively.
+                                        // Standard HTTPS URL returns 404 on Google servers.
+                                        final sceneViewerUrl = kIsWeb
+                                            ? 'intent://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_only#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=' + Uri.encodeComponent(directModelUrl) + ';end;'
+                                            : 'https://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_only';
 
                                         if (kDebugMode) {
                                           print(
@@ -2266,7 +2269,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                   }
                                 }
                               : () {
-                                  // Show message when clicked on desktop/web
+                                  // Show message when clicked on desktop/web (PC restriction as intended)
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
