@@ -277,6 +277,11 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       }
     }
 
+    // Add direct AR link
+    if (_product.id != null && _product.id!.isNotEmpty) {
+      buffer.writeln('\n🌐 View in 3D & AR: https://ar.redwolfmedia.in/product/' + _product.id!);
+    }
+
     // Add branding
     buffer.writeln('\n🔗 From RedWolf Media - Creative Visibility');
 
