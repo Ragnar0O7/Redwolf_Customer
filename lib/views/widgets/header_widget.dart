@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/responsive_helper.dart';
+import 'whatsapp_icon.dart';
 
 class HeaderWidget extends StatelessWidget {
   const HeaderWidget({super.key});
@@ -80,9 +81,8 @@ class HeaderWidget extends StatelessWidget {
                 }
               }
             },
-            icon: Icon(
-              Icons.chat_bubble,
-              size: isMobile ? 12.0 : 18.0,
+            icon: WhatsAppIcon(
+              size: isMobile ? 14.0 : 18.0,
               color: Colors.white,
             ),
             label: Text(

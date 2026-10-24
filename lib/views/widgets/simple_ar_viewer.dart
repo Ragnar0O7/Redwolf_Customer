@@ -430,7 +430,7 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR Viewer - ${widget.productName ?? '3D Model'}</title>
-  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -732,6 +732,10 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
       interaction-policy="always-allow"
       style="width: 100%; height: 100%;"
     >
+      <button slot="ar-button" id="ar-button" style="position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); background: #ED1F24; color: white; border: none; border-radius: 28px; padding: 12px 24px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 15px rgba(237,31,36,0.4); display: flex; align-items: center; gap: 8px; cursor: pointer; z-index: 100;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        <span>View in your space</span>
+      </button>
     </model-viewer>
     
     <!-- Top Controls -->
@@ -958,7 +962,7 @@ class _SimpleARViewerState extends State<SimpleARViewer> {
       }
       
       try {
-        if (false && modelViewer.activateAR) {
+        if (modelViewer.activateAR) {
           arAutoTriggered = true;
           infoText.textContent = 'Opening AR view...';
           

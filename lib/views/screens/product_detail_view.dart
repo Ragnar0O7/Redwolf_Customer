@@ -12,6 +12,7 @@ import '../../services/device_detection_service.dart';
 import '../../utils/responsive_helper.dart';
 import '../../config/supabase_config.dart';
 import '../widgets/product_card.dart';
+import '../widgets/whatsapp_icon.dart';
 import 'product_detail_view_web_stub.dart'
     if (dart.library.html) 'product_detail_view_web.dart'
     as web_utils;
@@ -1435,10 +1436,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             ),
                           ),
                           SizedBox(width: isMobile ? 4 : 8),
-                          Icon(
-                            Icons.chat_bubble,
+                          WhatsAppIcon(
                             size: iconSize,
-                            color: const Color(0xFFED1F24),
                           ),
                         ],
                       ),
@@ -2087,43 +2086,29 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           return;
                                         }
 
-                                        // For Google Scene Viewer, we need to properly encode the URL
-                                        // The URL from database may already have encoded characters (%20)
-                                        // To avoid double-encoding (%20 -> %2520), decode first then encode
-                                        // This ensures proper single encoding for the query parameter
-                                        String encodedModelUrl;
-                                        try {
-                                          // Decode the URL first to handle already-encoded characters
-                                          final decodedUrl =
-                                              Uri.decodeComponent(
-                                                directModelUrl,
-                                              );
-                                          // Then encode it properly for the query parameter
-                                          encodedModelUrl = Uri.encodeComponent(
-                                            decodedUrl,
-                                          );
-                                        } catch (e) {
-                                          // If decoding fails, encode as-is (fallback)
-                                          encodedModelUrl = Uri.encodeComponent(
-                                            directModelUrl,
-                                          );
-                                        }
+                                        // Sanitize direct model URL (spaces replaced with %20 for valid URI path)
+                                        final rawDirectUrl = directModelUrl.trim();
+                                        final sanitizedDirectUrl = rawDirectUrl.replaceAll(' ', '%20');
 
-                                        // Use Google Scene Viewer URL format to directly open AR
-                                        // This will trigger Scene Viewer directly without showing the cube first
-                                        // Use the properly encoded URL
-                                        // For Android Chrome, intent scheme triggers Google Scene Viewer app natively.
-                                        // Standard HTTPS URL returns 404 on Google servers.
+                                        // Encode model URL and metadata for Google Scene Viewer
+                                        final encodedModelUrl = Uri.encodeComponent(sanitizedDirectUrl);
+                                        final encodedTitle = Uri.encodeComponent(_product.name);
+                                        final productFallback = 'https://ar.redwolfmedia.in/product/${_product.id ?? ''}';
+                                        final encodedFallbackUrl = Uri.encodeComponent(productFallback);
+
+                                        // Use Google Scene Viewer with mode=ar_preferred
+                                        // ar_preferred launches directly into AR while gracefully showing 3D if ARCore needs calibration,
+                                        // preventing immediate bounce back to the browser.
                                         final sceneViewerUrl = kIsWeb
-                                            ? 'intent://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_only#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=' + Uri.encodeComponent(directModelUrl) + ';end;'
-                                            : 'https://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_only';
+                                            ? 'intent://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_preferred&title=$encodedTitle&resizable=true#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=$encodedFallbackUrl;end;'
+                                            : 'https://arvr.google.com/scene-viewer/1.0?file=$encodedModelUrl&mode=ar_preferred&title=$encodedTitle&resizable=true';
 
                                         if (kDebugMode) {
                                           print(
                                             '=== Google Scene Viewer Debug ===',
                                           );
                                           print(
-                                            'Direct Model URL: $directModelUrl',
+                                            'Direct Model URL: $sanitizedDirectUrl',
                                           );
                                           print(
                                             'Encoded URL: $encodedModelUrl',
@@ -2132,20 +2117,17 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                             'Scene Viewer URL: $sceneViewerUrl',
                                           );
                                           print(
-                                            'Note: URL is decoded then encoded to avoid double-encoding',
-                                          );
-                                          print(
                                             '================================',
                                           );
                                         }
 
-                                        // Track AR view before launching
+                                        // Track AR view asynchronously without awaiting so the browser user gesture token remains valid
                                         if (_product.id != null) {
                                           final analyticsService =
                                               AnalyticsService();
-                                          await analyticsService.trackARView(
+                                          analyticsService.trackARView(
                                             _product.id!,
-                                          );
+                                          ).ignore();
                                         }
 
                                         // Try to launch Scene Viewer directly
@@ -2158,7 +2140,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         if (!launched && mounted) {
                                           if (kDebugMode) {
                                             print(
-                                              'Google Scene Viewer launch failed, trying fallback',
+                                              'Google Scene Viewer launch failed, opening web AR viewer',
                                             );
                                           }
                                           // Fallback: Navigate to AR view screen if direct launch fails
@@ -2167,7 +2149,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                               builder: (context) =>
                                                   ARViewScreen(
                                                     product: _product,
-                                                    modelUrl: directModelUrl,
+                                                    modelUrl: sanitizedDirectUrl,
                                                   ),
                                             ),
                                           );
@@ -2180,24 +2162,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         }
                                         // Fallback: Navigate to AR view screen on error
                                         if (mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Error launching AR: ${e.toString()}',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              backgroundColor: const Color(
-                                                0xFFED1F24,
-                                              ),
-                                              duration: const Duration(
-                                                seconds: 3,
-                                              ),
-                                            ),
-                                          );
                                           Navigator.of(context).push(
                                             MaterialPageRoute(
                                               builder: (context) =>
