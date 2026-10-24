@@ -1423,19 +1423,16 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Flexible(
-                            child: Text(
-                              'Enquire now',
-                              style: TextStyle(
-                                color: const Color(0xFFED1F24),
-                                fontSize: buttonFontSize,
-                                fontWeight: FontWeight.w600,
-                                height: 1.43,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            'Enquire now',
+                            style: TextStyle(
+                              color: const Color(0xFFED1F24),
+                              fontSize: buttonFontSize,
+                              fontWeight: FontWeight.w600,
+                              height: 1.43,
                             ),
                           ),
-                          SizedBox(width: isMobile ? 4 : 8),
+                          SizedBox(width: isMobile ? 6 : 8),
                           WhatsAppIcon(
                             size: iconSize,
                           ),
