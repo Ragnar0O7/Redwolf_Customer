@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../models/product.dart';
 import 'ar_view_screen.dart';
 import '../../services/product_detail_service.dart';
@@ -1431,8 +1430,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             ),
                           ),
                           SizedBox(width: isMobile ? 4 : 8),
-                          FaIcon(
-                            FontAwesomeIcons.whatsapp,
+                          Icon(
+                            Icons.chat_bubble,
                             size: iconSize,
                             color: const Color(0xFFED1F24),
                           ),

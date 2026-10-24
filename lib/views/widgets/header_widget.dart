@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../utils/responsive_helper.dart';
 
 class HeaderWidget extends StatelessWidget {
@@ -81,8 +80,8 @@ class HeaderWidget extends StatelessWidget {
                 }
               }
             },
-            icon: FaIcon(
-              FontAwesomeIcons.whatsapp,
+            icon: Icon(
+              Icons.chat_bubble,
               size: isMobile ? 12.0 : 18.0,
               color: Colors.white,
             ),
