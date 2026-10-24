@@ -1950,8 +1950,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                             if (_product.id != null) {
                                               final analyticsService =
                                                   AnalyticsService();
-                                              await analyticsService
-                                                  .trackARView(_product.id!);
+                                              analyticsService
+                                                  .trackARView(_product.id!).ignore();
                                             }
 
                                             if (kIsWeb) {
@@ -2083,35 +2083,19 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           return;
                                         }
 
-                                        // Sanitize direct model URL (spaces replaced with %20 for valid URI path)
-                                        // Keep https:// scheme intact - DO NOT percent-encode the whole URL with Uri.encodeComponent,
-                                        // as Google Scene Viewer fails to resolve https%3A%2F%2F and immediately aborts to fallback.
                                         final rawDirectUrl = directModelUrl.trim();
-                                        final sanitizedDirectUrl = rawDirectUrl.replaceAll(' ', '%20');
-
-                                        final encodedTitle = Uri.encodeComponent(_product.name);
-                                        final productFallback = 'https://ar.redwolfmedia.in/product/${_product.id ?? ''}';
-                                        final encodedFallbackUrl = Uri.encodeComponent(productFallback);
-
-                                        // Use Google Scene Viewer with mode=ar_preferred
-                                        // ar_preferred launches directly into AR while gracefully showing 3D if ARCore needs calibration,
-                                        // preventing immediate bounce back to the browser.
-                                        final sceneViewerUrl = kIsWeb
-                                            ? 'intent://arvr.google.com/scene-viewer/1.0?file=$sanitizedDirectUrl&mode=ar_preferred&title=$encodedTitle&resizable=true#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=$encodedFallbackUrl;end;'
-                                            : 'https://arvr.google.com/scene-viewer/1.0?file=$sanitizedDirectUrl&mode=ar_preferred&title=$encodedTitle&resizable=true';
+                                        final productFallback =
+                                            'https://ar.redwolfmedia.in/product/${_product.id ?? ''}';
 
                                         if (kDebugMode) {
                                           print(
-                                            '=== Google Scene Viewer Debug ===',
+                                            '=== Google Scene Viewer Launch ===',
                                           );
                                           print(
-                                            'Direct Model URL: $sanitizedDirectUrl',
+                                            'Direct Model URL: $rawDirectUrl',
                                           );
                                           print(
-                                            'Sanitized Model URL: $sanitizedDirectUrl',
-                                          );
-                                          print(
-                                            'Scene Viewer URL: $sceneViewerUrl',
+                                            'Product Fallback URL: $productFallback',
                                           );
                                           print(
                                             '================================',
@@ -2127,29 +2111,41 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           ).ignore();
                                         }
 
-                                        // Try to launch Scene Viewer directly
-                                        final uri = Uri.parse(sceneViewerUrl);
-                                        final launched = await launchUrl(
-                                          uri,
-                                          mode: LaunchMode.externalApplication,
-                                        );
+                                        if (kIsWeb) {
+                                          // CRITICAL: On Web, navigate via window.location.href in the current window.
+                                          // Never use url_launcher's LaunchMode.externalApplication (_blank tab)
+                                          // which causes Android Chrome to abort the intent and bounce back to fallback URL!
+                                          web_utils.WebUtils.launchAndroidSceneViewer(
+                                            glbUrl: rawDirectUrl,
+                                            title: _product.name,
+                                            fallbackUrl: productFallback,
+                                          );
+                                        } else {
+                                          final encodedFile =
+                                              Uri.encodeComponent(rawDirectUrl);
+                                          final encodedTitle =
+                                              Uri.encodeComponent(_product.name);
+                                          final encodedFallback =
+                                              Uri.encodeComponent(productFallback);
+                                          final sceneViewerUrl =
+                                              'intent://arvr.google.com/scene-viewer/1.0?file=$encodedFile&mode=ar_preferred&title=$encodedTitle&resizable=true#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=$encodedFallback;end;';
+                                          final uri = Uri.parse(sceneViewerUrl);
+                                          final launched = await launchUrl(
+                                            uri,
+                                            mode: LaunchMode.externalApplication,
+                                          );
 
-                                        if (!launched && mounted) {
-                                          if (kDebugMode) {
-                                            print(
-                                              'Google Scene Viewer launch failed, opening web AR viewer',
+                                          if (!launched && mounted) {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ARViewScreen(
+                                                      product: _product,
+                                                      modelUrl: rawDirectUrl,
+                                                    ),
+                                              ),
                                             );
                                           }
-                                          // Fallback: Navigate to AR view screen if direct launch fails
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ARViewScreen(
-                                                    product: _product,
-                                                    modelUrl: sanitizedDirectUrl,
-                                                  ),
-                                            ),
-                                          );
                                         }
                                       } catch (e) {
                                         if (kDebugMode) {

@@ -14,4 +14,9 @@ class WebUtils {
   static Future<bool> openUsdzInAR(String usdzUrl) async => false;
   static bool isIPad() => false;
   static Future<bool> openGlbOnIPad(String glbUrl) async => false;
+  static void launchAndroidSceneViewer({
+    required String glbUrl,
+    required String title,
+    required String fallbackUrl,
+  }) {}
 }

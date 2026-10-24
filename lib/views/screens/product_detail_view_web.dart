@@ -409,4 +409,38 @@ class WebUtils {
       }
     }
   }
+
+  /// Launch Google Scene Viewer on Android web in the CURRENT window (same tab).
+  ///
+  /// CRITICAL: Never use window.open() or url_launcher's LaunchMode.externalApplication (_blank).
+  /// Spawning an empty _blank tab causes Android Chrome to immediately abort/bounce back to fallback URL.
+  static void launchAndroidSceneViewer({
+    required String glbUrl,
+    required String title,
+    required String fallbackUrl,
+  }) {
+    try {
+      final cleanGlbUrl = glbUrl.trim();
+      final encodedFile = Uri.encodeComponent(cleanGlbUrl);
+      final encodedTitle = Uri.encodeComponent(title.trim());
+      final encodedFallback = Uri.encodeComponent(fallbackUrl.trim());
+
+      final intentUrl = 'intent://arvr.google.com/scene-viewer/1.0'
+          '?file=' + encodedFile +
+          '&mode=ar_preferred' +
+          '&title=' + encodedTitle +
+          '&resizable=true' +
+          '#Intent;' +
+          'scheme=https;' +
+          'package=com.google.android.googlequicksearchbox;' +
+          'action=android.intent.action.VIEW;' +
+          'S.browser_fallback_url=' + encodedFallback +
+          ';end;';
+
+      print('Launching Scene Viewer in current window: ' + intentUrl);
+      html.window.location.href = intentUrl;
+    } catch (e) {
+      print('Error launching Android Scene Viewer: ' + e.toString());
+    }
+  }
 }
