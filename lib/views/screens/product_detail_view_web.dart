@@ -1,5 +1,6 @@
 // Web implementation
 import 'dart:html' as html;
+import 'dart:js' as js;
 
 class WebUtils {
   static String getCurrentUrl() {
@@ -409,6 +410,37 @@ class WebUtils {
       }
     }
   }
+
+  /// Preload a hidden <model-viewer> so a tap can start Chrome's in-browser
+  /// WebXR AR (same path modelviewer.dev uses) inside the user gesture.
+  static void prepareModelViewerAR(String glbUrl) {
+    final existing = html.document.getElementById('rw-ar-viewer');
+    if (existing != null && existing.getAttribute('src') == glbUrl) return;
+    existing?.remove();
+    final viewer = html.document.createElement('model-viewer')
+      ..id = 'rw-ar-viewer'
+      ..setAttribute('src', glbUrl)
+      ..setAttribute('ar', '')
+      ..setAttribute('ar-modes', 'webxr')
+      ..setAttribute('ar-placement', 'floor')
+      ..setAttribute('loading', 'eager')
+      ..style.cssText =
+          'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
+    html.document.body?.append(viewer);
+  }
+
+  /// Start WebXR AR on the preloaded viewer. False if the device can't.
+  static bool activateModelViewerAR() {
+    final viewer = html.document.getElementById('rw-ar-viewer');
+    if (viewer == null) return false;
+    final jsViewer = js.JsObject.fromBrowserObject(viewer);
+    if (jsViewer['canActivateAR'] != true) return false;
+    jsViewer.callMethod('activateAR');
+    return true;
+  }
+
+  static void disposeModelViewerAR() =>
+      html.document.getElementById('rw-ar-viewer')?.remove();
 
   /// Launch Google Scene Viewer on Android web in the CURRENT window (same tab).
   ///
