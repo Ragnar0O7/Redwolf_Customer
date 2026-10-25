@@ -330,7 +330,7 @@ class WebUtils {
       // The rel="ar" attribute tells Safari to open the file in AR Quick Look
       // Note: Autorotate must be enabled in the USDZ file itself, not via URL
       final anchor = html.AnchorElement()
-        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=1'
+        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=0'
         ..rel =
             'ar' // Critical: This attribute triggers AR Quick Look
         ..style.position = 'fixed'
@@ -423,6 +423,7 @@ class WebUtils {
       ..setAttribute('ar', '')
       ..setAttribute('ar-modes', 'webxr')
       ..setAttribute('ar-placement', 'floor')
+      ..setAttribute('ar-scale', 'fixed') // models are real-size; no pinch resize
       ..setAttribute('loading', 'eager')
       ..style.cssText =
           'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
@@ -461,7 +462,7 @@ class WebUtils {
           '?file=' + encodedFile +
           '&mode=ar_preferred' +
           '&title=' + encodedTitle +
-          '&resizable=true' +
+          '&resizable=false' +
           '#Intent;' +
           'scheme=https;' +
           'package=com.google.android.googlequicksearchbox;' +
