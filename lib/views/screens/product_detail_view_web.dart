@@ -430,14 +430,36 @@ class WebUtils {
   /// Android in-app browsers (WebView) have neither WebXR nor intent:// links.
   static bool isAndroidWebView() => getUserAgent().contains('; wv)');
 
-  /// Open the standalone AR page (web/ar.html) in this tab. Chrome's WebXR AR
-  /// started from inside the Flutter page showed a camera with no model on some
-  /// phones; the same model-viewer setup on its own page (like modelviewer.dev)
-  /// works, shows a loading bar, and falls back to Scene Viewer by itself.
-  static void openARPage({required String glbUrl, required String title}) {
-    html.window.location.href = Uri(
-      path: '/ar.html',
-      queryParameters: {'src': glbUrl.trim(), 'title': title.trim()},
-    ).toString();
+  /// Launch Google Scene Viewer AR straight from the tap, in the CURRENT window.
+  /// Chrome's WebXR AR (model-viewer) showed a camera with no model on some
+  /// phones, inside Flutter and on a plain page alike, so Android uses the
+  /// native viewer: its own floor guidance, pinch zoom and close button.
+  ///
+  /// Never use window.open() or url_launcher's _blank: Android Chrome aborts the
+  /// intent from an empty tab. If the page never goes to the background, Scene
+  /// Viewer didn't open (no Google app / AR services) and [onUnavailable] says so.
+  static void launchAndroidSceneViewer({
+    required String glbUrl,
+    required String title,
+    void Function()? onUnavailable,
+  }) {
+    var leftPage = false;
+    final sub = html.document.onVisibilityChange.listen((_) {
+      if (html.document.hidden == true) leftPage = true;
+    });
+    Future.delayed(const Duration(seconds: 4), () {
+      sub.cancel();
+      if (!leftPage) onUnavailable?.call();
+    });
+    html.window.location.href = 'intent://arvr.google.com/scene-viewer/1.0'
+        '?file=${Uri.encodeComponent(glbUrl.trim())}'
+        '&mode=ar_preferred'
+        '&title=${Uri.encodeComponent(title.trim())}'
+        '&resizable=true'
+        '#Intent;scheme=https;'
+        'package=com.google.android.googlequicksearchbox;'
+        'action=android.intent.action.VIEW;'
+        'S.browser_fallback_url=${Uri.encodeComponent(html.window.location.href)};'
+        'end;';
   }
 }

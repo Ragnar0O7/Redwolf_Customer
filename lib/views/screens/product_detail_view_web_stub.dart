@@ -16,5 +16,9 @@ class WebUtils {
   static Future<bool> openGlbOnIPad(String glbUrl) async => false;
   static bool supportsQuickLook() => false;
   static bool isAndroidWebView() => false;
-  static void openARPage({required String glbUrl, required String title}) {}
+  static void launchAndroidSceneViewer({
+    required String glbUrl,
+    required String title,
+    void Function()? onUnavailable,
+  }) {}
 }

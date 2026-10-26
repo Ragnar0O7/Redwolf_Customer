@@ -2147,9 +2147,12 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                             );
                                             return;
                                           }
-                                          web_utils.WebUtils.openARPage(
+                                          web_utils.WebUtils.launchAndroidSceneViewer(
                                             glbUrl: rawDirectUrl,
                                             title: _product.name,
+                                            onUnavailable: () => _showARMessage(
+                                              'Couldn\'t open AR. Update the Google app and Google Play Services for AR, then try again.',
+                                            ),
                                           );
                                         } else {
                                           final encodedFile =
