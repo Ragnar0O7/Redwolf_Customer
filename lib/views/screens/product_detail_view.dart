@@ -43,25 +43,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     _loadProductDetails();
     _trackProductView();
     _loadSimilarProducts();
-    _prepareAndroidAR();
-  }
-
-  // Preload a hidden <model-viewer> so "View in my space" can open Chrome's
-  // WebXR AR within the tap; Scene Viewer stays as the fallback.
-  void _prepareAndroidAR() {
-    if (!kIsWeb ||
-        !web_utils.WebUtils.getUserAgent().toLowerCase().contains('android')) {
-      return;
-    }
-    final glbUrl = _product.glbFileUrl ?? _product.modelUrl;
-    if (glbUrl != null && glbUrl.isNotEmpty) {
-      web_utils.WebUtils.prepareModelViewerAR(
-        glbUrl,
-        onFailed: () => _showARMessage(
-          'AR needs camera access. Tap "View in my space" again to open it.',
-        ),
-      );
-    }
   }
 
   void _showARMessage(String text) {
@@ -87,7 +68,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   @override
   void dispose() {
     _imagePageController?.dispose();
-    if (kIsWeb) web_utils.WebUtils.disposeModelViewerAR();
     super.dispose();
   }
 
@@ -106,7 +86,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           // Re-initialize image controller in case image count changed
           _initializeImageController();
         });
-        _prepareAndroidAR();
       }
     } catch (e) {
       print('Error loading product details: $e');
@@ -2161,9 +2140,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         }
 
                                         if (kIsWeb) {
-                                          // CRITICAL: On Web, navigate via window.location.href in the current window.
-                                          // Never use url_launcher's LaunchMode.externalApplication (_blank tab)
-                                          // which causes Android Chrome to abort the intent and bounce back to fallback URL!
                                           if (web_utils.WebUtils
                                               .isAndroidWebView()) {
                                             _showARMessage(
@@ -2171,17 +2147,10 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                             );
                                             return;
                                           }
-                                          // Chrome's WebXR AR first; Scene Viewer if unsupported
-                                          if (!web_utils.WebUtils
-                                              .activateModelViewerAR()) {
-                                            web_utils.WebUtils.launchAndroidSceneViewer(
-                                              glbUrl: rawDirectUrl,
-                                              title: _product.name,
-                                              onUnavailable: () => _showARMessage(
-                                                'Couldn\'t open AR. Update the Google app and Google Play Services for AR, then try again.',
-                                              ),
-                                            );
-                                          }
+                                          web_utils.WebUtils.openARPage(
+                                            glbUrl: rawDirectUrl,
+                                            title: _product.name,
+                                          );
                                         } else {
                                           final encodedFile =
                                               Uri.encodeComponent(rawDirectUrl);

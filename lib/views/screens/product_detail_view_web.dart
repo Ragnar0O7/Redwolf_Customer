@@ -430,131 +430,14 @@ class WebUtils {
   /// Android in-app browsers (WebView) have neither WebXR nor intent:// links.
   static bool isAndroidWebView() => getUserAgent().contains('; wv)');
 
-  static void Function()? _onWebXRFailed;
-  static bool _webXRTapped = false;
-
-  /// Preload a hidden <model-viewer> so a tap can start Chrome's in-browser
-  /// WebXR AR (same path modelviewer.dev uses) inside the user gesture.
-  /// [onFailed] runs when the session fails, e.g. the camera prompt is dismissed.
-  static void prepareModelViewerAR(String glbUrl, {void Function()? onFailed}) {
-    _onWebXRFailed = onFailed;
-    final existing = html.document.getElementById('rw-ar-viewer');
-    if (existing != null && existing.getAttribute('src') == glbUrl) return;
-    existing?.remove();
-    final viewer = html.document.createElement('model-viewer')
-      ..id = 'rw-ar-viewer'
-      ..setAttribute('src', glbUrl)
-      ..setAttribute('ar', '')
-      ..setAttribute('ar-modes', 'webxr')
-      ..setAttribute('ar-placement', 'floor')
-      ..setAttribute('loading', 'eager')
-      ..style.cssText = _hiddenViewerCss
-      // model-viewer has no scan prompt of its own; the model only appears
-      // once the floor is found, so tell the user to scan for it.
-      ..append(html.DivElement()
-        ..className = 'rw-ar-prompt'
-        ..text = 'Point your phone at the floor and move it slowly side to side');
-    if (html.document.getElementById('rw-ar-style') == null) {
-      html.document.head?.append(html.StyleElement()
-        ..id = 'rw-ar-style'
-        ..text = '''
-#rw-ar-viewer > .rw-ar-prompt { display: none; position: absolute; left: 50%;
-  bottom: 72px; transform: translateX(-50%); width: max-content; max-width: 80vw;
-  padding: 12px 18px; border-radius: 24px; background: rgba(0,0,0,.72);
-  color: #fff; font: 500 15px/1.35 Roboto, sans-serif; text-align: center; }
-#rw-ar-viewer[ar-status="session-started"] > .rw-ar-prompt,
-#rw-ar-viewer[ar-tracking="not-tracking"] > .rw-ar-prompt { display: block; }
-''');
-    }
-    viewer.addEventListener('ar-status', (event) {
-      final detail = js.JsObject.fromBrowserObject(event)['detail'];
-      final status = detail is js.JsObject ? detail['status'] : null;
-      if (status == 'not-presenting' || status == 'failed') {
-        viewer.style.cssText = _hiddenViewerCss;
-      }
-      // 'failed' also fires on load when the phone has no WebXR; only a tap counts.
-      if (_webXRTapped && status == 'failed') {
-        _webXRTapped = false;
-        _onWebXRFailed?.call();
-      }
-    });
-    html.document.body?.append(viewer);
-  }
-
-  /// Start WebXR AR on the preloaded viewer. False if the device can't, or if
-  /// the model is still downloading: model-viewer would wait for the download
-  /// before asking for the camera, the tap's user activation expires on a slow
-  /// network, and the session fails with nothing on screen. Scene Viewer
-  /// downloads the model itself and shows its own loader, so it takes over.
-  /// After a failed session model-viewer stops offering WebXR, so the next tap
-  /// lands on Scene Viewer too.
-  static bool activateModelViewerAR() {
-    final viewer = html.document.getElementById('rw-ar-viewer');
-    if (viewer == null) return false;
-    final jsViewer = js.JsObject.fromBrowserObject(viewer);
-    if (jsViewer['canActivateAR'] != true || jsViewer['loaded'] != true) {
-      return false;
-    }
-    _webXRTapped = true;
-    // model-viewer draws its AR UI (scan-the-floor prompt, exit button) inside
-    // the element, so it must fill the screen while AR runs; at 1px it's invisible.
-    viewer.style.cssText = _arViewerCss;
-    jsViewer.callMethod('activateAR');
-    return true;
-  }
-
-  static const _hiddenViewerCss =
-      'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
-  static const _arViewerCss =
-      'position:fixed;inset:0;width:100vw;height:100vh;z-index:2147483647;';
-
-  static void disposeModelViewerAR() =>
-      html.document.getElementById('rw-ar-viewer')?.remove();
-
-  /// Launch Google Scene Viewer on Android web in the CURRENT window (same tab).
-  ///
-  /// CRITICAL: Never use window.open() or url_launcher's LaunchMode.externalApplication (_blank).
-  /// Spawning an empty _blank tab causes Android Chrome to immediately abort/bounce back to fallback URL.
-  ///
-  /// When the phone can't run Scene Viewer (no Google app / AR services), Chrome
-  /// opens the fallback URL, which is this same page (hash routing, no reload).
-  /// If the page never went to the background, Scene Viewer didn't open, and
-  /// [onUnavailable] tells the user instead of the tap doing nothing.
-  static void launchAndroidSceneViewer({
-    required String glbUrl,
-    required String title,
-    void Function()? onUnavailable,
-  }) {
-    try {
-      var leftPage = false;
-      final sub = html.document.onVisibilityChange.listen((_) {
-        if (html.document.hidden == true) leftPage = true;
-      });
-      Future.delayed(const Duration(seconds: 4), () {
-        sub.cancel();
-        if (!leftPage) onUnavailable?.call();
-      });
-      final cleanGlbUrl = glbUrl.trim();
-      final encodedFile = Uri.encodeComponent(cleanGlbUrl);
-      final encodedTitle = Uri.encodeComponent(title.trim());
-      final encodedFallback = Uri.encodeComponent(html.window.location.href);
-
-      final intentUrl = 'intent://arvr.google.com/scene-viewer/1.0'
-          '?file=' + encodedFile +
-          '&mode=ar_preferred' +
-          '&title=' + encodedTitle +
-          '&resizable=true' +
-          '#Intent;' +
-          'scheme=https;' +
-          'package=com.google.android.googlequicksearchbox;' +
-          'action=android.intent.action.VIEW;' +
-          'S.browser_fallback_url=' + encodedFallback +
-          ';end;';
-
-      print('Launching Scene Viewer in current window: ' + intentUrl);
-      html.window.location.href = intentUrl;
-    } catch (e) {
-      print('Error launching Android Scene Viewer: ' + e.toString());
-    }
+  /// Open the standalone AR page (web/ar.html) in this tab. Chrome's WebXR AR
+  /// started from inside the Flutter page showed a camera with no model on some
+  /// phones; the same model-viewer setup on its own page (like modelviewer.dev)
+  /// works, shows a loading bar, and falls back to Scene Viewer by itself.
+  static void openARPage({required String glbUrl, required String title}) {
+    html.window.location.href = Uri(
+      path: '/ar.html',
+      queryParameters: {'src': glbUrl.trim(), 'title': title.trim()},
+    ).toString();
   }
 }
