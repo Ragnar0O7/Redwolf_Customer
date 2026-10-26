@@ -33,6 +33,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   List<Product> _similarProducts = [];
   bool _isLoadingSimilar = false;
   PageController? _imagePageController;
+  bool _arOpening = false;
 
   @override
   void initState() {
@@ -54,8 +55,25 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     }
     final glbUrl = _product.glbFileUrl ?? _product.modelUrl;
     if (glbUrl != null && glbUrl.isNotEmpty) {
-      web_utils.WebUtils.prepareModelViewerAR(glbUrl);
+      web_utils.WebUtils.prepareModelViewerAR(
+        glbUrl,
+        onFailed: () => _showARMessage(
+          'AR needs camera access. Tap "View in my space" again to open it.',
+        ),
+      );
     }
+  }
+
+  void _showARMessage(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text, style: const TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFFED1F24),
+        duration: const Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _initializeImageController() {
@@ -1516,6 +1534,13 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         return ElevatedButton(
                           onPressed: isARSupported
                               ? () async {
+                                  // Show progress and ignore repeat taps while AR opens;
+                                  // stacked taps used to queue several launches at once.
+                                  if (_arOpening) return;
+                                  setState(() => _arOpening = true);
+                                  Future.delayed(const Duration(seconds: 4), () {
+                                    if (mounted) setState(() => _arOpening = false);
+                                  });
                                   try {
                                     // Check if we have a model file
                                     final hasGlbFile =
@@ -1652,6 +1677,14 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           analyticsService.trackARView(
                                             _product.id!,
                                           ).ignore();
+                                        }
+
+                                        if (kIsWeb &&
+                                            !web_utils.WebUtils.supportsQuickLook()) {
+                                          _showARMessage(
+                                            'AR can\'t open inside this app. Open this page in Safari to view it in your space.',
+                                          );
+                                          return;
                                         }
 
                                         // On web (iPad Safari), use special method to trigger AR Quick Look
@@ -2131,13 +2164,22 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           // CRITICAL: On Web, navigate via window.location.href in the current window.
                                           // Never use url_launcher's LaunchMode.externalApplication (_blank tab)
                                           // which causes Android Chrome to abort the intent and bounce back to fallback URL!
+                                          if (web_utils.WebUtils
+                                              .isAndroidWebView()) {
+                                            _showARMessage(
+                                              'AR can\'t open inside this app. Open this page in Chrome to view it in your space.',
+                                            );
+                                            return;
+                                          }
                                           // Chrome's WebXR AR first; Scene Viewer if unsupported
                                           if (!web_utils.WebUtils
                                               .activateModelViewerAR()) {
                                             web_utils.WebUtils.launchAndroidSceneViewer(
                                               glbUrl: rawDirectUrl,
                                               title: _product.name,
-                                              fallbackUrl: productFallback,
+                                              onUnavailable: () => _showARMessage(
+                                                'Couldn\'t open AR. Update the Google app and Google Play Services for AR, then try again.',
+                                              ),
                                             );
                                           }
                                         } else {
@@ -2280,7 +2322,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             children: [
                               Flexible(
                                 child: Text(
-                                  'View in my space',
+                                  _arOpening ? 'Opening AR…' : 'View in my space',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: buttonFontSize,
@@ -2291,7 +2333,16 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                 ),
                               ),
                               SizedBox(width: isMobile ? 4 : 8),
-                              Icon(Icons.view_in_ar, size: iconSize),
+                              _arOpening
+                                  ? SizedBox(
+                                      width: iconSize,
+                                      height: iconSize,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Icon(Icons.view_in_ar, size: iconSize),
                             ],
                           ),
                         );

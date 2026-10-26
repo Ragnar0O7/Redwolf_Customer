@@ -330,7 +330,7 @@ class WebUtils {
       // The rel="ar" attribute tells Safari to open the file in AR Quick Look
       // Note: Autorotate must be enabled in the USDZ file itself, not via URL
       final anchor = html.AnchorElement()
-        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=0'
+        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=1'
         ..rel =
             'ar' // Critical: This attribute triggers AR Quick Look
         ..style.position = 'fixed'
@@ -411,9 +411,33 @@ class WebUtils {
     }
   }
 
+  /// Safari can open rel="ar" links in AR Quick Look; in-app browsers
+  /// (Instagram, Facebook, Gmail...) can't, and the tap does nothing there.
+  /// Same test model-viewer uses: Chrome/Edge/Firefox/Google app on iOS support
+  /// it but don't report it through relList.
+  static bool supportsQuickLook() {
+    if (RegExp(r'CriOS/|EdgiOS/|FxiOS/|GSA/|DuckDuckGo/').hasMatch(getUserAgent())) {
+      return true;
+    }
+    try {
+      final relList = js.JsObject.fromBrowserObject(html.AnchorElement())['relList'];
+      return relList is js.JsObject && relList.callMethod('supports', ['ar']) == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Android in-app browsers (WebView) have neither WebXR nor intent:// links.
+  static bool isAndroidWebView() => getUserAgent().contains('; wv)');
+
+  static void Function()? _onWebXRFailed;
+  static bool _webXRTapped = false;
+
   /// Preload a hidden <model-viewer> so a tap can start Chrome's in-browser
   /// WebXR AR (same path modelviewer.dev uses) inside the user gesture.
-  static void prepareModelViewerAR(String glbUrl) {
+  /// [onFailed] runs when the session fails, e.g. the camera prompt is dismissed.
+  static void prepareModelViewerAR(String glbUrl, {void Function()? onFailed}) {
+    _onWebXRFailed = onFailed;
     final existing = html.document.getElementById('rw-ar-viewer');
     if (existing != null && existing.getAttribute('src') == glbUrl) return;
     existing?.remove();
@@ -423,22 +447,49 @@ class WebUtils {
       ..setAttribute('ar', '')
       ..setAttribute('ar-modes', 'webxr')
       ..setAttribute('ar-placement', 'floor')
-      ..setAttribute('ar-scale', 'fixed') // models are real-size; no pinch resize
       ..setAttribute('loading', 'eager')
-      ..style.cssText =
-          'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
+      ..style.cssText = _hiddenViewerCss;
+    viewer.addEventListener('ar-status', (event) {
+      final detail = js.JsObject.fromBrowserObject(event)['detail'];
+      final status = detail is js.JsObject ? detail['status'] : null;
+      if (status == 'not-presenting' || status == 'failed') {
+        viewer.style.cssText = _hiddenViewerCss;
+      }
+      // 'failed' also fires on load when the phone has no WebXR; only a tap counts.
+      if (_webXRTapped && status == 'failed') {
+        _webXRTapped = false;
+        _onWebXRFailed?.call();
+      }
+    });
     html.document.body?.append(viewer);
   }
 
-  /// Start WebXR AR on the preloaded viewer. False if the device can't.
+  /// Start WebXR AR on the preloaded viewer. False if the device can't, or if
+  /// the model is still downloading: model-viewer would wait for the download
+  /// before asking for the camera, the tap's user activation expires on a slow
+  /// network, and the session fails with nothing on screen. Scene Viewer
+  /// downloads the model itself and shows its own loader, so it takes over.
+  /// After a failed session model-viewer stops offering WebXR, so the next tap
+  /// lands on Scene Viewer too.
   static bool activateModelViewerAR() {
     final viewer = html.document.getElementById('rw-ar-viewer');
     if (viewer == null) return false;
     final jsViewer = js.JsObject.fromBrowserObject(viewer);
-    if (jsViewer['canActivateAR'] != true) return false;
+    if (jsViewer['canActivateAR'] != true || jsViewer['loaded'] != true) {
+      return false;
+    }
+    _webXRTapped = true;
+    // model-viewer draws its AR UI (scan-the-floor prompt, exit button) inside
+    // the element, so it must fill the screen while AR runs; at 1px it's invisible.
+    viewer.style.cssText = _arViewerCss;
     jsViewer.callMethod('activateAR');
     return true;
   }
+
+  static const _hiddenViewerCss =
+      'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
+  static const _arViewerCss =
+      'position:fixed;inset:0;width:100vw;height:100vh;z-index:2147483647;';
 
   static void disposeModelViewerAR() =>
       html.document.getElementById('rw-ar-viewer')?.remove();
@@ -447,22 +498,35 @@ class WebUtils {
   ///
   /// CRITICAL: Never use window.open() or url_launcher's LaunchMode.externalApplication (_blank).
   /// Spawning an empty _blank tab causes Android Chrome to immediately abort/bounce back to fallback URL.
+  ///
+  /// When the phone can't run Scene Viewer (no Google app / AR services), Chrome
+  /// opens the fallback URL, which is this same page (hash routing, no reload).
+  /// If the page never went to the background, Scene Viewer didn't open, and
+  /// [onUnavailable] tells the user instead of the tap doing nothing.
   static void launchAndroidSceneViewer({
     required String glbUrl,
     required String title,
-    required String fallbackUrl,
+    void Function()? onUnavailable,
   }) {
     try {
+      var leftPage = false;
+      final sub = html.document.onVisibilityChange.listen((_) {
+        if (html.document.hidden == true) leftPage = true;
+      });
+      Future.delayed(const Duration(seconds: 4), () {
+        sub.cancel();
+        if (!leftPage) onUnavailable?.call();
+      });
       final cleanGlbUrl = glbUrl.trim();
       final encodedFile = Uri.encodeComponent(cleanGlbUrl);
       final encodedTitle = Uri.encodeComponent(title.trim());
-      final encodedFallback = Uri.encodeComponent(fallbackUrl.trim());
+      final encodedFallback = Uri.encodeComponent(html.window.location.href);
 
       final intentUrl = 'intent://arvr.google.com/scene-viewer/1.0'
           '?file=' + encodedFile +
           '&mode=ar_preferred' +
           '&title=' + encodedTitle +
-          '&resizable=false' +
+          '&resizable=true' +
           '#Intent;' +
           'scheme=https;' +
           'package=com.google.android.googlequicksearchbox;' +
