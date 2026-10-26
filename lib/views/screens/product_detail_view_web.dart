@@ -448,7 +448,24 @@ class WebUtils {
       ..setAttribute('ar-modes', 'webxr')
       ..setAttribute('ar-placement', 'floor')
       ..setAttribute('loading', 'eager')
-      ..style.cssText = _hiddenViewerCss;
+      ..style.cssText = _hiddenViewerCss
+      // model-viewer has no scan prompt of its own; the model only appears
+      // once the floor is found, so tell the user to scan for it.
+      ..append(html.DivElement()
+        ..className = 'rw-ar-prompt'
+        ..text = 'Point your phone at the floor and move it slowly side to side');
+    if (html.document.getElementById('rw-ar-style') == null) {
+      html.document.head?.append(html.StyleElement()
+        ..id = 'rw-ar-style'
+        ..text = '''
+#rw-ar-viewer > .rw-ar-prompt { display: none; position: absolute; left: 50%;
+  bottom: 72px; transform: translateX(-50%); width: max-content; max-width: 80vw;
+  padding: 12px 18px; border-radius: 24px; background: rgba(0,0,0,.72);
+  color: #fff; font: 500 15px/1.35 Roboto, sans-serif; text-align: center; }
+#rw-ar-viewer[ar-status="session-started"] > .rw-ar-prompt,
+#rw-ar-viewer[ar-tracking="not-tracking"] > .rw-ar-prompt { display: block; }
+''');
+    }
     viewer.addEventListener('ar-status', (event) {
       final detail = js.JsObject.fromBrowserObject(event)['detail'];
       final status = detail is js.JsObject ? detail['status'] : null;
