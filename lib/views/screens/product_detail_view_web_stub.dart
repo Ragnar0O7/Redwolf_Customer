@@ -14,11 +14,12 @@ class WebUtils {
   static Future<bool> openUsdzInAR(String usdzUrl) async => false;
   static bool isIPad() => false;
   static Future<bool> openGlbOnIPad(String glbUrl) async => false;
-  static bool supportsQuickLook() => false;
-  static bool isAndroidWebView() => false;
+  static void prepareModelViewerAR(String glbUrl) {}
+  static bool activateModelViewerAR() => false;
+  static void disposeModelViewerAR() {}
   static void launchAndroidSceneViewer({
     required String glbUrl,
     required String title,
-    void Function()? onUnavailable,
+    required String fallbackUrl,
   }) {}
 }

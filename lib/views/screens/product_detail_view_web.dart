@@ -411,55 +411,68 @@ class WebUtils {
     }
   }
 
-  /// Safari can open rel="ar" links in AR Quick Look; in-app browsers
-  /// (Instagram, Facebook, Gmail...) can't, and the tap does nothing there.
-  /// Same test model-viewer uses: Chrome/Edge/Firefox/Google app on iOS support
-  /// it but don't report it through relList.
-  static bool supportsQuickLook() {
-    if (RegExp(r'CriOS/|EdgiOS/|FxiOS/|GSA/|DuckDuckGo/').hasMatch(getUserAgent())) {
-      return true;
-    }
-    try {
-      final relList = js.JsObject.fromBrowserObject(html.AnchorElement())['relList'];
-      return relList is js.JsObject && relList.callMethod('supports', ['ar']) == true;
-    } catch (_) {
-      return false;
-    }
+  /// Preload a hidden <model-viewer> so a tap can start Chrome's in-browser
+  /// WebXR AR (same path modelviewer.dev uses) inside the user gesture.
+  static void prepareModelViewerAR(String glbUrl) {
+    final existing = html.document.getElementById('rw-ar-viewer');
+    if (existing != null && existing.getAttribute('src') == glbUrl) return;
+    existing?.remove();
+    final viewer = html.document.createElement('model-viewer')
+      ..id = 'rw-ar-viewer'
+      ..setAttribute('src', glbUrl)
+      ..setAttribute('ar', '')
+      ..setAttribute('ar-modes', 'webxr')
+      ..setAttribute('ar-placement', 'floor')
+      ..setAttribute('loading', 'eager')
+      ..style.cssText =
+          'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
+    html.document.body?.append(viewer);
   }
 
-  /// Android in-app browsers (WebView) have neither WebXR nor intent:// links.
-  static bool isAndroidWebView() => getUserAgent().contains('; wv)');
+  /// Start WebXR AR on the preloaded viewer. False if the device can't.
+  static bool activateModelViewerAR() {
+    final viewer = html.document.getElementById('rw-ar-viewer');
+    if (viewer == null) return false;
+    final jsViewer = js.JsObject.fromBrowserObject(viewer);
+    if (jsViewer['canActivateAR'] != true) return false;
+    jsViewer.callMethod('activateAR');
+    return true;
+  }
 
-  /// Launch Google Scene Viewer AR straight from the tap, in the CURRENT window.
-  /// Chrome's WebXR AR (model-viewer) showed a camera with no model on some
-  /// phones, inside Flutter and on a plain page alike, so Android uses the
-  /// native viewer: its own floor guidance, pinch zoom and close button.
+  static void disposeModelViewerAR() =>
+      html.document.getElementById('rw-ar-viewer')?.remove();
+
+  /// Launch Google Scene Viewer on Android web in the CURRENT window (same tab).
   ///
-  /// Never use window.open() or url_launcher's _blank: Android Chrome aborts the
-  /// intent from an empty tab. If the page never goes to the background, Scene
-  /// Viewer didn't open (no Google app / AR services) and [onUnavailable] says so.
+  /// CRITICAL: Never use window.open() or url_launcher's LaunchMode.externalApplication (_blank).
+  /// Spawning an empty _blank tab causes Android Chrome to immediately abort/bounce back to fallback URL.
   static void launchAndroidSceneViewer({
     required String glbUrl,
     required String title,
-    void Function()? onUnavailable,
+    required String fallbackUrl,
   }) {
-    var leftPage = false;
-    final sub = html.document.onVisibilityChange.listen((_) {
-      if (html.document.hidden == true) leftPage = true;
-    });
-    Future.delayed(const Duration(seconds: 4), () {
-      sub.cancel();
-      if (!leftPage) onUnavailable?.call();
-    });
-    html.window.location.href = 'intent://arvr.google.com/scene-viewer/1.0'
-        '?file=${Uri.encodeComponent(glbUrl.trim())}'
-        '&mode=ar_preferred'
-        '&title=${Uri.encodeComponent(title.trim())}'
-        '&resizable=true'
-        '#Intent;scheme=https;'
-        'package=com.google.android.googlequicksearchbox;'
-        'action=android.intent.action.VIEW;'
-        'S.browser_fallback_url=${Uri.encodeComponent(html.window.location.href)};'
-        'end;';
+    try {
+      final cleanGlbUrl = glbUrl.trim();
+      final encodedFile = Uri.encodeComponent(cleanGlbUrl);
+      final encodedTitle = Uri.encodeComponent(title.trim());
+      final encodedFallback = Uri.encodeComponent(fallbackUrl.trim());
+
+      final intentUrl = 'intent://arvr.google.com/scene-viewer/1.0'
+          '?file=' + encodedFile +
+          '&mode=ar_preferred' +
+          '&title=' + encodedTitle +
+          '&resizable=true' +
+          '#Intent;' +
+          'scheme=https;' +
+          'package=com.google.android.googlequicksearchbox;' +
+          'action=android.intent.action.VIEW;' +
+          'S.browser_fallback_url=' + encodedFallback +
+          ';end;';
+
+      print('Launching Scene Viewer in current window: ' + intentUrl);
+      html.window.location.href = intentUrl;
+    } catch (e) {
+      print('Error launching Android Scene Viewer: ' + e.toString());
+    }
   }
 }
