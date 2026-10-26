@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -33,6 +35,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   List<Product> _similarProducts = [];
   bool _isLoadingSimilar = false;
   PageController? _imagePageController;
+  bool _arOpening = false;
+  Timer? _arOpeningTimer;
 
   @override
   void initState() {
@@ -54,8 +58,51 @@ class _ProductDetailViewState extends State<ProductDetailView> {
     }
     final glbUrl = _product.glbFileUrl ?? _product.modelUrl;
     if (glbUrl != null && glbUrl.isNotEmpty) {
-      web_utils.WebUtils.prepareModelViewerAR(glbUrl);
+      web_utils.WebUtils.prepareModelViewerAR(glbUrl, onStatus: _onArStatus);
     }
+  }
+
+  void _onArStatus(String status) {
+    _setArOpening(false);
+    if (status == 'failed') _showCameraHelp();
+  }
+
+  // Spinner on "View in my space" from the tap until AR opens or fails. 12 s cap,
+  // since Quick Look / Scene Viewer never report back.
+  void _setArOpening(bool value, {Duration delay = Duration.zero}) {
+    _arOpeningTimer?.cancel();
+    if (value) {
+      _arOpeningTimer =
+          Timer(const Duration(seconds: 12), () => _setArOpening(false));
+    } else if (delay > Duration.zero) {
+      _arOpeningTimer = Timer(delay, () => _setArOpening(false));
+      return;
+    }
+    if (mounted && _arOpening != value) setState(() => _arOpening = value);
+  }
+
+  void _showCameraHelp() {
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Allow camera for AR'),
+        content: const Text(
+          'AR uses your camera to place the product in your room.\n\n'
+          'Tap the lock icon next to the web address → Permissions → Camera → Allow. '
+          'Then tap "View in my space" again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Color(0xFFED1F24)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _initializeImageController() {
@@ -69,6 +116,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   @override
   void dispose() {
     _imagePageController?.dispose();
+    _arOpeningTimer?.cancel();
     if (kIsWeb) web_utils.WebUtils.disposeModelViewerAR();
     super.dispose();
   }
@@ -1516,6 +1564,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         return ElevatedButton(
                           onPressed: isARSupported
                               ? () async {
+                                  if (_arOpening) return; // ignore repeat taps
+                                  _setArOpening(true);
                                   try {
                                     // Check if we have a model file
                                     final hasGlbFile =
@@ -2132,7 +2182,10 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           // Never use url_launcher's LaunchMode.externalApplication (_blank tab)
                                           // which causes Android Chrome to abort the intent and bounce back to fallback URL!
                                           // Chrome's WebXR AR first; Scene Viewer if unsupported
-                                          if (!web_utils.WebUtils
+                                          if (web_utils.WebUtils.cameraDenied) {
+                                            _setArOpening(false);
+                                            _showCameraHelp();
+                                          } else if (!web_utils.WebUtils
                                               .activateModelViewerAR()) {
                                             web_utils.WebUtils.launchAndroidSceneViewer(
                                               glbUrl: rawDirectUrl,
@@ -2247,6 +2300,13 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                         );
                                       }
                                     }
+                                  } finally {
+                                    // WebXR resets via ar-status; Quick Look / Scene Viewer
+                                    // open on top of the page within a couple of seconds.
+                                    if (!web_utils.WebUtils.webXRPending) {
+                                      _setArOpening(false,
+                                          delay: const Duration(seconds: 2));
+                                    }
                                   }
                                 }
                               : () {
@@ -2278,9 +2338,20 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (_arOpening) ...[
+                                SizedBox(
+                                  width: iconSize,
+                                  height: iconSize,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: isMobile ? 6 : 8),
+                              ],
                               Flexible(
                                 child: Text(
-                                  'View in my space',
+                                  _arOpening ? 'Opening AR…' : 'View in my space',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: buttonFontSize,

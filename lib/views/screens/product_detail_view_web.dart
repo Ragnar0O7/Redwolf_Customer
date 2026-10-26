@@ -413,7 +413,12 @@ class WebUtils {
 
   /// Preload a hidden <model-viewer> so a tap can start Chrome's in-browser
   /// WebXR AR (same path modelviewer.dev uses) inside the user gesture.
-  static void prepareModelViewerAR(String glbUrl) {
+  /// [onStatus] gets model-viewer's ar-status after a tap: session-started,
+  /// object-placed, not-presenting, or failed (e.g. camera denied).
+  static void prepareModelViewerAR(String glbUrl,
+      {void Function(String status)? onStatus}) {
+    _onArStatus = onStatus;
+    _watchCameraPermission();
     final existing = html.document.getElementById('rw-ar-viewer');
     if (existing != null && existing.getAttribute('src') == glbUrl) return;
     existing?.remove();
@@ -446,6 +451,14 @@ class WebUtils {
       final presenting = status == 'session-started' || status == 'object-placed';
       viewer.style.cssText = presenting ? _arViewerCss : _hiddenViewerCss;
       prompt.style.display = status == 'session-started' ? 'block' : 'none';
+      // 'failed' also fires on load when the phone has no WebXR; only a tap counts.
+      if (!_webXRTapped || status is! String) return;
+      if (presenting) _webXRStarted = true;
+      if (status == 'failed' || (status == 'not-presenting' && _webXRStarted)) {
+        _webXRTapped = false;
+        _webXRStarted = false;
+      }
+      _onArStatus?.call(status);
     });
     if (html.document.getElementById('rw-ar-style') == null) {
       html.document.head?.append(html.StyleElement()
@@ -453,6 +466,30 @@ class WebUtils {
         ..text = _arUiCss);
     }
     html.document.body?.append(viewer);
+  }
+
+  static void Function(String status)? _onArStatus;
+  static bool _webXRTapped = false;
+  static bool _webXRStarted = false;
+  static bool _cameraDenied = false;
+  static bool _watchingCamera = false;
+
+  /// True from a WebXR tap until the session fails or ends.
+  static bool get webXRPending => _webXRTapped;
+
+  /// True when the user has blocked the camera for this site.
+  static bool get cameraDenied => _cameraDenied;
+
+  static Future<void> _watchCameraPermission() async {
+    if (_watchingCamera) return;
+    _watchingCamera = true;
+    try {
+      final status =
+          await html.window.navigator.permissions!.query({'name': 'camera'});
+      _cameraDenied = status.state == 'denied';
+      status.addEventListener(
+          'change', (_) => _cameraDenied = status.state == 'denied');
+    } catch (_) {} // browser without the Permissions API: just try AR
   }
 
   static const _hiddenViewerCss =
@@ -474,6 +511,8 @@ class WebUtils {
     if (viewer == null) return false;
     final jsViewer = js.JsObject.fromBrowserObject(viewer);
     if (jsViewer['canActivateAR'] != true) return false;
+    _webXRTapped = true;
+    _webXRStarted = false;
     jsViewer.callMethod('activateAR');
     return true;
   }

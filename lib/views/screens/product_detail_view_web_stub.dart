@@ -14,8 +14,11 @@ class WebUtils {
   static Future<bool> openUsdzInAR(String usdzUrl) async => false;
   static bool isIPad() => false;
   static Future<bool> openGlbOnIPad(String glbUrl) async => false;
-  static void prepareModelViewerAR(String glbUrl) {}
+  static void prepareModelViewerAR(String glbUrl,
+      {void Function(String status)? onStatus}) {}
   static bool activateModelViewerAR() => false;
+  static bool get webXRPending => false;
+  static bool get cameraDenied => false;
   static void disposeModelViewerAR() {}
   static void launchAndroidSceneViewer({
     required String glbUrl,
