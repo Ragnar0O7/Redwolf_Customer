@@ -47,7 +47,8 @@
     };
     // Only our own storage, so this page can't be used to show arbitrary files.
     let ok = false;
-    try { ok = new URL(src).origin === 'https://zsipfgtlfnfvmnrohtdo.supabase.co'; } catch (_) {}
+    // modelviewer.dev: Google's sample models, for A/B testing a phone.
+    try { ok = ['https://zsipfgtlfnfvmnrohtdo.supabase.co', 'https://modelviewer.dev'].includes(new URL(src).origin); } catch (_) {}
     if (ok) {
       viewer.src = src;
       const title = params.get('title');
