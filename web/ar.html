@@ -48,7 +48,9 @@
     // Only our own storage, so this page can't be used to show arbitrary files.
     let ok = false;
     // modelviewer.dev: Google's sample models, for A/B testing a phone.
-    try { ok = ['https://zsipfgtlfnfvmnrohtdo.supabase.co', 'https://modelviewer.dev'].includes(new URL(src).origin); } catch (_) {}
+    try { ok = ['https://zsipfgtlfnfvmnrohtdo.supabase.co', 'https://modelviewer.dev', location.origin].includes(new URL(src, location.href).origin); } catch (_) {}
+    // ?modes=scene-viewer forces Google's AR viewer (A/B test).
+    if (params.get('modes') === 'scene-viewer') viewer.setAttribute('ar-modes', 'scene-viewer');
     if (ok) {
       viewer.src = src;
       const title = params.get('title');
