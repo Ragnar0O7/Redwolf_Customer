@@ -330,7 +330,7 @@ class WebUtils {
       // The rel="ar" attribute tells Safari to open the file in AR Quick Look
       // Note: Autorotate must be enabled in the USDZ file itself, not via URL
       final anchor = html.AnchorElement()
-        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=0'
+        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=1'
         ..rel =
             'ar' // Critical: This attribute triggers AR Quick Look
         ..style.position = 'fixed'
@@ -423,12 +423,50 @@ class WebUtils {
       ..setAttribute('ar', '')
       ..setAttribute('ar-modes', 'webxr')
       ..setAttribute('ar-placement', 'floor')
-      ..setAttribute('ar-scale', 'fixed') // models are real-size; no pinch resize
       ..setAttribute('loading', 'eager')
-      ..style.cssText =
-          'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
+      ..style.cssText = _hiddenViewerCss;
+    // Clean iOS-style AR overlay. model-viewer 4.0 shows the exit slot only during
+    // AR and has no floor prompt of its own, so the prompt follows ar-status below.
+    final prompt = html.DivElement()
+      ..className = 'rw-ar-prompt'
+      ..text = 'Move your phone slowly to find the floor'
+      ..style.display = 'none';
+    viewer.append(prompt);
+    viewer.append(html.ButtonElement()
+      ..className = 'rw-ar-exit'
+      ..setAttribute('slot', 'exit-webxr-ar-button')
+      ..setAttribute('aria-label', 'Close AR')
+      ..setInnerHtml(
+          '<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>',
+          treeSanitizer: html.NodeTreeSanitizer.trusted));
+    // model-viewer draws its AR overlay inside the element, so it fills the screen during AR.
+    viewer.addEventListener('ar-status', (event) {
+      final detail = js.JsObject.fromBrowserObject(event)['detail'];
+      final status = detail is js.JsObject ? detail['status'] : null;
+      final presenting = status == 'session-started' || status == 'object-placed';
+      viewer.style.cssText = presenting ? _arViewerCss : _hiddenViewerCss;
+      prompt.style.display = status == 'session-started' ? 'block' : 'none';
+    });
+    if (html.document.getElementById('rw-ar-style') == null) {
+      html.document.head?.append(html.StyleElement()
+        ..id = 'rw-ar-style'
+        ..text = _arUiCss);
+    }
     html.document.body?.append(viewer);
   }
+
+  static const _hiddenViewerCss =
+      'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
+  static const _arViewerCss =
+      'position:fixed;inset:0;width:100vw;height:100vh;z-index:2147483647;';
+  static const _arUiCss = '''
+.rw-ar-prompt{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 72px);transform:translateX(-50%);
+  padding:10px 18px;border-radius:22px;background:rgba(28,28,30,.55);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  color:#fff;font:500 15px/1.3 -apple-system,Roboto,system-ui,sans-serif;white-space:nowrap;pointer-events:none}
+.rw-ar-exit{position:fixed;top:calc(env(safe-area-inset-top) + 16px);left:16px;width:40px;height:40px;padding:0;border:0;
+  border-radius:50%;background:rgba(28,28,30,.55);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  display:grid;place-items:center;pointer-events:auto;cursor:pointer}
+''';
 
   /// Start WebXR AR on the preloaded viewer. False if the device can't.
   static bool activateModelViewerAR() {
@@ -462,7 +500,7 @@ class WebUtils {
           '?file=' + encodedFile +
           '&mode=ar_preferred' +
           '&title=' + encodedTitle +
-          '&resizable=false' +
+          '&resizable=true' +
           '#Intent;' +
           'scheme=https;' +
           'package=com.google.android.googlequicksearchbox;' +
