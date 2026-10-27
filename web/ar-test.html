@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>AR route test</title>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<style>
+  body { font: 16px/1.4 system-ui, sans-serif; margin: 16px; color: #111; }
+  button { display: block; width: 100%; margin: 8px 0; padding: 14px; font-size: 16px; text-align: left; border: 1px solid #999; border-radius: 10px; background: #fff; }
+  button b { display: block; }
+  model-viewer { width: 100%; height: 260px; background: #eee; border-radius: 10px; }
+  #log { white-space: pre-wrap; font: 13px/1.4 monospace; background: #f4f4f4; padding: 10px; border-radius: 10px; }
+  select { width: 100%; padding: 10px; font-size: 16px; }
+</style>
+</head>
+<body>
+<h3>AR route test (crashing phone)</h3>
+<p>Tap each route once, then come back here. Send a screenshot of the log at the bottom.</p>
+<select id="model">
+  <option value="https://zsipfgtlfnfvmnrohtdo.supabase.co/storage/v1/object/public/products/products/glb/model_1770555635852_model.glb">Redwolf product model</option>
+  <option value="https://modelviewer.dev/shared-assets/models/Astronaut.glb">Google Astronaut sample</option>
+</select>
+
+<button data-route="A"><b>A. Google app (what the shop uses)</b>Expected to crash on this phone.</button>
+<button data-route="B"><b>B. ARCore app, ar_only</b>Scene Viewer through Google Play Services for AR.</button>
+<button data-route="C"><b>C. ARCore app, ar_preferred</b></button>
+<button data-route="D"><b>D. No app named</b>Android picks the handler.</button>
+
+<p><b>E. Chrome WebXR</b> (same as modelviewer.dev): tap the AR icon on the model.</p>
+<model-viewer id="mv" ar ar-modes="webxr" ar-placement="floor" camera-controls></model-viewer>
+
+<h4>Log</h4>
+<div id="log"></div>
+
+<script>
+  const log = (s) => { const t = new Date().toLocaleTimeString(); document.getElementById('log').textContent += `${t}  ${s}\n`; };
+  const sel = document.getElementById('model');
+  const mv = document.getElementById('mv');
+  const setModel = () => { mv.src = sel.value; };
+  sel.onchange = setModel; setModel();
+  log(navigator.userAgent);
+
+  const enc = encodeURIComponent;
+  const fallback = location.href.split('#')[0] + '#fallback';
+  const routes = {
+    A: (f) => `intent://arvr.google.com/scene-viewer/1.0?file=${enc(f)}&mode=ar_preferred&title=Test&resizable=true#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${enc(fallback)};end;`,
+    B: (f) => `intent://arvr.google.com/scene-viewer/1.0?file=${enc(f)}&mode=ar_only&title=Test&resizable=true#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=${enc(fallback)};end;`,
+    C: (f) => `intent://arvr.google.com/scene-viewer/1.0?file=${enc(f)}&mode=ar_preferred&title=Test&resizable=true#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=${enc(fallback)};end;`,
+    D: (f) => `intent://arvr.google.com/scene-viewer/1.0?file=${enc(f)}&mode=ar_preferred&title=Test&resizable=true#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${enc(fallback)};end;`,
+  };
+
+  // Time away from the page tells a crash (back in ~0.1-1 s) from real use.
+  let pending = null;
+  document.addEventListener('visibilitychange', () => {
+    if (!pending) return;
+    if (document.hidden) { pending.left = performance.now(); return; }
+    const away = pending.left ? Math.round(performance.now() - pending.left) : null;
+    log(`route ${pending.r}: ${away === null ? 'page never left' : `away ${away} ms`}`);
+    pending = null;
+  });
+  addEventListener('hashchange', () => { if (location.hash === '#fallback') log('fallback URL opened (app missing or refused)'); });
+
+  document.querySelectorAll('button[data-route]').forEach((b) => b.onclick = () => {
+    const r = b.dataset.route;
+    pending = { r, left: 0 };
+    log(`route ${r}: launching`);
+    location.href = routes[r](sel.value);
+    setTimeout(() => { if (pending && !pending.left) { log(`route ${r}: page never left after 3 s`); pending = null; } }, 3000);
+  });
+
+  mv.addEventListener('ar-status', (e) => log(`route E: ar-status ${e.detail.status}`));
+  mv.addEventListener('load', () => log(`model loaded, canActivateAR=${mv.canActivateAR}`));
+  mv.addEventListener('error', (e) => log(`model error ${e.detail?.type || ''}`));
+</script>
+</body>
+</html>
