@@ -2131,13 +2131,24 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           // CRITICAL: On Web, navigate via window.location.href in the current window.
                                           // Never use url_launcher's LaunchMode.externalApplication (_blank tab)
                                           // which causes Android Chrome to abort the intent and bounce back to fallback URL!
-                                          // Chrome's WebXR AR first; Scene Viewer if unsupported
-                                          if (!web_utils.WebUtils
-                                              .activateModelViewerAR()) {
+                                          // Scene Viewer as always. Phones where the Google app crashes it
+                                          // (17.66/17.68, arcore-android-sdk #1795/#1797) get Chrome's WebXR AR.
+                                          if (!web_utils.WebUtils.sceneViewerBroken ||
+                                              !web_utils.WebUtils
+                                                  .activateModelViewerAR()) {
                                             web_utils.WebUtils.launchAndroidSceneViewer(
                                               glbUrl: rawDirectUrl,
                                               title: _product.name,
                                               fallbackUrl: productFallback,
+                                              onBounce: () {
+                                                if (!mounted) return;
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                        'AR closed. Tap "View in my space" again.'),
+                                                  ),
+                                                );
+                                              },
                                             );
                                           }
                                         } else {

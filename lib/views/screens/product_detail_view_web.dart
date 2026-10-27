@@ -1,4 +1,5 @@
 // Web implementation
+import 'dart:async';
 import 'dart:html' as html;
 import 'dart:js' as js;
 
@@ -330,7 +331,7 @@ class WebUtils {
       // The rel="ar" attribute tells Safari to open the file in AR Quick Look
       // Note: Autorotate must be enabled in the USDZ file itself, not via URL
       final anchor = html.AnchorElement()
-        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=0'
+        ..href = encodedUrl.contains('#') ? encodedUrl : '$encodedUrl#allowsContentScaling=1'
         ..rel =
             'ar' // Critical: This attribute triggers AR Quick Look
         ..style.position = 'fixed'
@@ -423,7 +424,6 @@ class WebUtils {
       ..setAttribute('ar', '')
       ..setAttribute('ar-modes', 'webxr')
       ..setAttribute('ar-placement', 'floor')
-      ..setAttribute('ar-scale', 'fixed') // models are real-size; no pinch resize
       ..setAttribute('loading', 'eager')
       ..style.cssText =
           'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
@@ -451,6 +451,7 @@ class WebUtils {
     required String glbUrl,
     required String title,
     required String fallbackUrl,
+    void Function()? onBounce,
   }) {
     try {
       final cleanGlbUrl = glbUrl.trim();
@@ -462,7 +463,7 @@ class WebUtils {
           '?file=' + encodedFile +
           '&mode=ar_preferred' +
           '&title=' + encodedTitle +
-          '&resizable=false' +
+          '&resizable=true' +
           '#Intent;' +
           'scheme=https;' +
           'package=com.google.android.googlequicksearchbox;' +
@@ -471,9 +472,47 @@ class WebUtils {
           ';end;';
 
       print('Launching Scene Viewer in current window: ' + intentUrl);
+      _watchSceneViewerBounce(onBounce);
       html.window.location.href = intentUrl;
     } catch (e) {
       print('Error launching Android Scene Viewer: ' + e.toString());
     }
+  }
+
+  // Google app 17.66/17.68 crashes Scene Viewer right after it opens
+  // (arcore-android-sdk #1795, #1797). A return to the page within this
+  // window marks the phone, and later taps use Chrome's WebXR AR.
+  // ponytail: time heuristic; raise the window if real users close AR this fast.
+  static const _bounceWindow = Duration(seconds: 4);
+  static const _bounceKey = 'rw-scene-viewer-broken';
+  static const _bounceTtl = Duration(days: 7); // retry Scene Viewer once Google ships a fix
+
+  /// True when Scene Viewer bounced on this phone in the last week.
+  static bool get sceneViewerBroken {
+    final at = int.tryParse(html.window.localStorage[_bounceKey] ?? '');
+    return at != null &&
+        DateTime.now().millisecondsSinceEpoch - at < _bounceTtl.inMilliseconds;
+  }
+
+  static void _watchSceneViewerBounce(void Function()? onBounce) {
+    final launched = DateTime.now();
+    var left = false;
+    StreamSubscription<html.Event>? sub;
+    sub = html.document.onVisibilityChange.listen((_) {
+      if (html.document.hidden == true) {
+        left = true;
+        return;
+      }
+      sub?.cancel();
+      if (left && DateTime.now().difference(launched) < _bounceWindow) {
+        html.window.localStorage[_bounceKey] =
+            '${DateTime.now().millisecondsSinceEpoch}';
+        onBounce?.call();
+      }
+    });
+    // Intent never left the page (no Google app etc.): stop watching.
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!left) sub?.cancel();
+    });
   }
 }

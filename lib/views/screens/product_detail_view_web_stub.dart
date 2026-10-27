@@ -21,5 +21,7 @@ class WebUtils {
     required String glbUrl,
     required String title,
     required String fallbackUrl,
+    void Function()? onBounce,
   }) {}
+  static bool get sceneViewerBroken => false;
 }
