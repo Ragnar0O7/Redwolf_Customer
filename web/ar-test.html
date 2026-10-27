@@ -56,15 +56,17 @@
   document.addEventListener('visibilitychange', () => {
     if (!pending) return;
     if (document.hidden) { pending.left = performance.now(); return; }
-    const away = pending.left ? Math.round(performance.now() - pending.left) : null;
-    log(`route ${pending.r}: ${away === null ? 'page never left' : `away ${away} ms`}`);
+    const now = performance.now();
+    log(pending.left
+      ? `route ${pending.r}: left ${Math.round(pending.left - pending.tap)} ms after tap, back ${Math.round(now - pending.tap)} ms after tap`
+      : `route ${pending.r}: page never left`);
     pending = null;
   });
   addEventListener('hashchange', () => { if (location.hash === '#fallback') log('fallback URL opened (app missing or refused)'); });
 
   document.querySelectorAll('button[data-route]').forEach((b) => b.onclick = () => {
     const r = b.dataset.route;
-    pending = { r, left: 0 };
+    pending = { r, left: 0, tap: performance.now() };
     log(`route ${r}: launching`);
     location.href = routes[r](sel.value);
     setTimeout(() => { if (pending && !pending.left) { log(`route ${r}: page never left after 3 s`); pending = null; } }, 3000);

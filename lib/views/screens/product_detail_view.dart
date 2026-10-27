@@ -2115,10 +2115,23 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                                           // CRITICAL: On Web, navigate via window.location.href in the current window.
                                           // Never use url_launcher's LaunchMode.externalApplication (_blank tab)
                                           // which causes Android Chrome to abort the intent and bounce back to fallback URL!
-                                          web_utils.WebUtils.launchAndroidSceneViewer(
+                                          // Scene Viewer as on Jan 6; a phone where it fails moves to
+                                          // the next real-AR route (see WebUtils.launchAndroidAR).
+                                          web_utils.WebUtils.launchAndroidAR(
                                             glbUrl: rawDirectUrl,
                                             title: _product.name,
                                             fallbackUrl: productFallback,
+                                            onFailed: () {
+                                              if (!mounted) return;
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'If AR didn\'t open, tap "View in my space" again.',
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                           );
                                         } else {
                                           final encodedFile =

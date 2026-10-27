@@ -1,5 +1,7 @@
 // Web implementation
+import 'dart:async';
 import 'dart:html' as html;
+import 'dart:js' as js;
 
 class WebUtils {
   static String getCurrentUrl() {
@@ -442,5 +444,144 @@ class WebUtils {
     } catch (e) {
       print('Error launching Android Scene Viewer: ' + e.toString());
     }
+  }
+
+  // Android AR routes, tried in order. A phone moves to the next route only
+  // after the current one fails on it, and goes back to Scene Viewer after
+  // [_routeTtl] (the Google app 17.66/17.68 crash, arcore-android-sdk #1795,
+  // is fixed by a Google app update).
+  //   0: Scene Viewer via the Google app (Jan 6 code, every working phone)
+  //   1: Scene Viewer via Google Play Services for AR (ar_only), not the Google app
+  //   2: Chrome WebXR on a full-screen <model-viewer> (as modelviewer.dev)
+  static const _routeKey = 'rw-ar-route';
+  static const _routeTtl = Duration(days: 3);
+  // The crash returns to the page within seconds (the "keeps stopping" dialog
+  // can take ~7 s); real AR use takes longer.
+  // ponytail: time heuristic; a quick back-out also advances, onto another real-AR route.
+  static const _failedWithin = Duration(seconds: 10);
+  static const _neverLeftAfter = Duration(seconds: 4);
+
+  static int get _route {
+    final parts = (html.window.localStorage[_routeKey] ?? '').split(':');
+    final at = parts.length == 2 ? int.tryParse(parts[1]) : null;
+    if (at == null ||
+        DateTime.now().millisecondsSinceEpoch - at > _routeTtl.inMilliseconds) {
+      return 0;
+    }
+    return (int.tryParse(parts[0]) ?? 0).clamp(0, 2);
+  }
+
+  static void _setRoute(int route) => html.window.localStorage[_routeKey] =
+      '$route:${DateTime.now().millisecondsSinceEpoch}';
+
+  /// Open AR on Android web on the route that works on this phone.
+  /// [onFailed] runs when the route just tried failed; the next tap uses the
+  /// next route.
+  static void launchAndroidAR({
+    required String glbUrl,
+    required String title,
+    required String fallbackUrl,
+    void Function()? onFailed,
+  }) {
+    final route = _route;
+    if (route == 2) {
+      _showWebXROverlay(glbUrl);
+      return;
+    }
+    _watchLaunch(() {
+      _setRoute(route + 1);
+      onFailed?.call();
+    });
+    if (route == 0) {
+      launchAndroidSceneViewer(
+          glbUrl: glbUrl, title: title, fallbackUrl: fallbackUrl);
+    } else {
+      html.window.location.href = 'intent://arvr.google.com/scene-viewer/1.0'
+          '?file=${Uri.encodeComponent(glbUrl.trim())}'
+          '&mode=ar_only'
+          '&title=${Uri.encodeComponent(title.trim())}'
+          '&resizable=true'
+          '#Intent;scheme=https;package=com.google.ar.core;'
+          'action=android.intent.action.VIEW;'
+          'S.browser_fallback_url=${Uri.encodeComponent(fallbackUrl.trim())};end;';
+    }
+  }
+
+  /// Calls [onFailed] if the page never leaves for the AR app, or comes back
+  /// within [_failedWithin] of the tap.
+  static void _watchLaunch(void Function() onFailed) {
+    final launched = DateTime.now();
+    var left = false;
+    var done = false;
+    late StreamSubscription<html.Event> sub;
+    void finish(bool failed) {
+      if (done) return;
+      done = true;
+      sub.cancel();
+      if (failed) onFailed();
+    }
+
+    sub = html.document.onVisibilityChange.listen((_) {
+      if (html.document.hidden == true) {
+        left = true;
+      } else if (left) {
+        finish(DateTime.now().difference(launched) < _failedWithin);
+      }
+    });
+    Future.delayed(_neverLeftAfter, () {
+      if (!left) finish(true);
+    });
+  }
+
+  /// Full-screen 3D view whose own AR button starts Chrome's WebXR AR
+  /// (camera + floor tracking), the path modelviewer.dev uses.
+  static void _showWebXROverlay(String glbUrl) {
+    html.document.getElementById('rw-ar-overlay')?.remove();
+    final overlay = html.DivElement()
+      ..id = 'rw-ar-overlay'
+      ..style.cssText = 'position:fixed;inset:0;z-index:2147483647;'
+          'background:#fff;display:flex;flex-direction:column;';
+    final close = html.ButtonElement()
+      ..text = '✕'
+      ..style.cssText = 'position:absolute;top:12px;right:12px;z-index:1;'
+          'width:44px;height:44px;border:0;border-radius:22px;'
+          'background:#f2f2f2;font-size:20px;';
+    close.onClick.listen((_) => overlay.remove());
+    final message = html.DivElement()
+      ..style.cssText = 'padding:0 16px 24px;text-align:center;'
+          'font:15px sans-serif;color:#555;';
+    final arButton = html.ButtonElement()
+      ..setAttribute('slot', 'ar-button')
+      ..text = 'View in your space'
+      ..style.cssText = 'position:absolute;left:50%;bottom:24px;'
+          'transform:translateX(-50%);padding:14px 28px;border:0;'
+          'border-radius:28px;background:#ED1F24;color:#fff;'
+          'font:600 16px sans-serif;';
+    final viewer = html.document.createElement('model-viewer')
+      ..setAttribute('src', glbUrl)
+      ..setAttribute('ar', '')
+      ..setAttribute('ar-modes', 'webxr')
+      ..setAttribute('ar-placement', 'floor')
+      ..setAttribute('camera-controls', '')
+      ..setAttribute('loading', 'eager')
+      ..style.cssText = 'flex:1;width:100%;';
+    viewer.append(arButton);
+    viewer.addEventListener('ar-status', (e) {
+      final status = js.JsObject.fromBrowserObject(e)['detail']['status'];
+      if (status == 'failed') {
+        message.text = 'AR could not start on this phone.';
+      }
+    });
+    viewer.addEventListener('load', (_) {
+      if (js.JsObject.fromBrowserObject(viewer)['canActivateAR'] != true) {
+        message.text = 'AR is not supported in this browser.';
+      }
+    });
+    overlay
+      ..append(close)
+      ..append(viewer)
+      ..append(message);
+    html.document.body?.append(overlay);
+    html.window.onPopState.first.then((_) => overlay.remove()); // Android back
   }
 }

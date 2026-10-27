@@ -19,4 +19,10 @@ class WebUtils {
     required String title,
     required String fallbackUrl,
   }) {}
+  static void launchAndroidAR({
+    required String glbUrl,
+    required String title,
+    required String fallbackUrl,
+    void Function()? onFailed,
+  }) {}
 }
