@@ -446,68 +446,47 @@ class WebUtils {
     }
   }
 
-  // Android AR routes, tried in order. A phone moves to the next route only
-  // after the current one fails on it, and goes back to Scene Viewer after
-  // [_routeTtl] (the Google app 17.66/17.68 crash, arcore-android-sdk #1795,
-  // is fixed by a Google app update).
-  //   0: Scene Viewer via the Google app (Jan 6 code, every working phone)
-  //   1: Scene Viewer via Google Play Services for AR (ar_only), not the Google app
-  //   2: Chrome WebXR on a full-screen <model-viewer> (as modelviewer.dev)
-  static const _routeKey = 'rw-ar-route';
-  static const _routeTtl = Duration(days: 3);
-  // The crash returns to the page within seconds (the "keeps stopping" dialog
-  // can take ~7 s); real AR use takes longer.
-  // ponytail: time heuristic; a quick back-out also advances, onto another real-AR route.
-  static const _failedWithin = Duration(seconds: 10);
+  // Google app 17.66/17.68 crashes Scene Viewer (arcore-android-sdk #1795).
+  // Measured on a crashing phone (ar-test.html, 2026-10-27): the crash brings
+  // Chrome back before the page is ever hidden, for the Google app and the
+  // ARCore-package intents alike. On a working phone Scene Viewer covers
+  // Chrome, so the page is hidden. A phone that crashed uses Chrome WebXR
+  // until [_brokenTtl] passes, then tries Scene Viewer again (Google fixes
+  // these with an app update).
+  static const _brokenKey = 'rw-ar-scene-viewer-fails';
+  static const _brokenTtl = Duration(days: 3);
   static const _neverLeftAfter = Duration(seconds: 4);
+  static const _failedWithin = Duration(seconds: 2); // too fast for real use
 
-  static int get _route {
-    final parts = (html.window.localStorage[_routeKey] ?? '').split(':');
-    final at = parts.length == 2 ? int.tryParse(parts[1]) : null;
-    if (at == null ||
-        DateTime.now().millisecondsSinceEpoch - at > _routeTtl.inMilliseconds) {
-      return 0;
-    }
-    return (int.tryParse(parts[0]) ?? 0).clamp(0, 2);
+  static bool get _sceneViewerFails {
+    final at = int.tryParse(html.window.localStorage[_brokenKey] ?? '');
+    return at != null &&
+        DateTime.now().millisecondsSinceEpoch - at < _brokenTtl.inMilliseconds;
   }
 
-  static void _setRoute(int route) => html.window.localStorage[_routeKey] =
-      '$route:${DateTime.now().millisecondsSinceEpoch}';
-
-  /// Open AR on Android web on the route that works on this phone.
-  /// [onFailed] runs when the route just tried failed; the next tap uses the
-  /// next route.
+  /// Open AR on Android web: Scene Viewer (Jan 6 code), or Chrome WebXR on a
+  /// phone where Scene Viewer failed. [onFailed] runs when Scene Viewer just
+  /// failed; the next tap opens WebXR.
   static void launchAndroidAR({
     required String glbUrl,
     required String title,
     required String fallbackUrl,
     void Function()? onFailed,
   }) {
-    final route = _route;
-    if (route == 2) {
+    if (_sceneViewerFails) {
       _showWebXROverlay(glbUrl);
       return;
     }
     _watchLaunch(() {
-      _setRoute(route + 1);
+      html.window.localStorage[_brokenKey] =
+          '${DateTime.now().millisecondsSinceEpoch}';
       onFailed?.call();
     });
-    if (route == 0) {
-      launchAndroidSceneViewer(
-          glbUrl: glbUrl, title: title, fallbackUrl: fallbackUrl);
-    } else {
-      html.window.location.href = 'intent://arvr.google.com/scene-viewer/1.0'
-          '?file=${Uri.encodeComponent(glbUrl.trim())}'
-          '&mode=ar_only'
-          '&title=${Uri.encodeComponent(title.trim())}'
-          '&resizable=true'
-          '#Intent;scheme=https;package=com.google.ar.core;'
-          'action=android.intent.action.VIEW;'
-          'S.browser_fallback_url=${Uri.encodeComponent(fallbackUrl.trim())};end;';
-    }
+    launchAndroidSceneViewer(
+        glbUrl: glbUrl, title: title, fallbackUrl: fallbackUrl);
   }
 
-  /// Calls [onFailed] if the page never leaves for the AR app, or comes back
+  /// Calls [onFailed] if the page never leaves for Scene Viewer, or comes back
   /// within [_failedWithin] of the tap.
   static void _watchLaunch(void Function() onFailed) {
     final launched = DateTime.now();

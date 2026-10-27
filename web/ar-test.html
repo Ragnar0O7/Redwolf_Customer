@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>AR route test</title>
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<script type="module">
+  // ?mv=4.0.0 (what the shop loads) or ?mv=4.4.0 (latest, what modelviewer.dev runs)
+  const v = new URLSearchParams(location.search).get('mv') || '4.0.0';
+  window.MV_VERSION = v;
+  import(`https://cdn.jsdelivr.net/npm/@google/model-viewer@${v}/dist/model-viewer.min.js`);
+</script>
 <style>
   body { font: 16px/1.4 system-ui, sans-serif; margin: 16px; color: #111; }
   button { display: block; width: 100%; margin: 8px 0; padding: 14px; font-size: 16px; text-align: left; border: 1px solid #999; border-radius: 10px; background: #fff; }
@@ -17,6 +22,7 @@
 </head>
 <body>
 <h3>AR route test (crashing phone)</h3>
+<p>model-viewer version: <a href="?mv=4.0.0">4.0.0 (shop)</a> | <a href="?mv=4.4.0">4.4.0 (latest)</a></p>
 <p>Tap each route once, then come back here. Send a screenshot of the log at the bottom.</p>
 <select id="model">
   <option value="https://zsipfgtlfnfvmnrohtdo.supabase.co/storage/v1/object/public/products/products/glb/model_1770555635852_model.glb">Redwolf product model</option>
@@ -41,6 +47,7 @@
   const setModel = () => { mv.src = sel.value; };
   sel.onchange = setModel; setModel();
   log(navigator.userAgent);
+  log(`model-viewer ${new URLSearchParams(location.search).get('mv') || '4.0.0'}`);
 
   const enc = encodeURIComponent;
   const fallback = location.href.split('#')[0] + '#fallback';
@@ -66,13 +73,14 @@
 
   document.querySelectorAll('button[data-route]').forEach((b) => b.onclick = () => {
     const r = b.dataset.route;
-    pending = { r, left: 0, tap: performance.now() };
+    const p = pending = { r, left: 0, tap: performance.now() };
     log(`route ${r}: launching`);
     location.href = routes[r](sel.value);
-    setTimeout(() => { if (pending && !pending.left) { log(`route ${r}: page never left after 3 s`); pending = null; } }, 3000);
+    setTimeout(() => { if (pending === p && !p.left) { log(`route ${r}: page never left after 3 s`); pending = null; } }, 3000);
   });
 
   mv.addEventListener('ar-status', (e) => log(`route E: ar-status ${e.detail.status}`));
+  mv.addEventListener('ar-tracking', (e) => log(`route E: ar-tracking ${e.detail.status}`));
   mv.addEventListener('load', () => log(`model loaded, canActivateAR=${mv.canActivateAR}`));
   mv.addEventListener('error', (e) => log(`model error ${e.detail?.type || ''}`));
 </script>
