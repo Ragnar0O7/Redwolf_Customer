@@ -1,5 +1,6 @@
 // Web implementation
 import 'dart:html' as html;
+import 'dart:js' as js;
 
 class WebUtils {
   static String getCurrentUrl() {
@@ -409,6 +410,61 @@ class WebUtils {
       }
     }
   }
+
+  /// Preload a hidden <model-viewer> so a tap can start Chrome's in-browser
+  /// WebXR AR (same path modelviewer.dev uses) inside the user gesture.
+  static void prepareModelViewerAR(String glbUrl) {
+    final existing = html.document.getElementById('rw-ar-viewer');
+    if (existing != null && existing.getAttribute('src') == glbUrl) return;
+    existing?.remove();
+    final viewer = html.document.createElement('model-viewer')
+      ..id = 'rw-ar-viewer'
+      ..setAttribute('src', glbUrl)
+      ..setAttribute('ar', '')
+      ..setAttribute('ar-modes', 'webxr')
+      ..setAttribute('ar-placement', 'floor')
+      ..setAttribute('loading', 'eager')
+      ..style.cssText =
+          'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;';
+    html.document.body?.append(viewer);
+  }
+
+  /// Start WebXR AR on the preloaded viewer. False if the device can't.
+  /// [onCameraNeeded] runs if AR failed to start without camera access;
+  /// `blocked` is true when the site's camera permission is denied (the
+  /// browser won't ask again, the user must allow it in site settings).
+  static bool activateModelViewerAR(
+      {void Function(bool blocked)? onCameraNeeded}) {
+    final viewer = html.document.getElementById('rw-ar-viewer');
+    if (viewer == null) return false;
+    final jsViewer = js.JsObject.fromBrowserObject(viewer);
+    if (jsViewer['canActivateAR'] != true) return false;
+    if (onCameraNeeded != null) {
+      viewer.on['ar-status']
+          .map((e) => js.JsObject.fromBrowserObject(e)['detail']['status'])
+          .firstWhere((s) => s == 'failed' || s == 'session-started')
+          .then((s) async {
+        if (s != 'failed') return;
+        final state = await _cameraPermission();
+        if (state != 'granted') onCameraNeeded(state == 'denied');
+      });
+    }
+    jsViewer.callMethod('activateAR');
+    return true;
+  }
+
+  static Future<String?> _cameraPermission() async {
+    try {
+      final status = await html.window.navigator.permissions
+          ?.query({'name': 'camera'});
+      return status?.state;
+    } catch (_) {
+      return null; // browser can't report it
+    }
+  }
+
+  static void disposeModelViewerAR() =>
+      html.document.getElementById('rw-ar-viewer')?.remove();
 
   /// Launch Google Scene Viewer on Android web in the CURRENT window (same tab).
   ///
